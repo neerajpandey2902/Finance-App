@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="theme-color" content="#4F46E5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Finance App v3 - Mobile Optimized</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #4F46E5;
+            --bg-color: #f8f9fa;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            padding-bottom: 80px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app-header {
+            background: #fff;
+            padding: 16px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-custom {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+        }
+
+        .card-balance { background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); color: white; }
+        .card-income { background: #e8f7ec; color: #146c43; }
+        .card-expense { background: #fdeaea; color: #b02a37; }
+
+        .transaction-item {
+            background: #fff;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .icon-box {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-right: 16px;
+        }
+
+        .fab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+            border: none;
+            z-index: 1050;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .fab:active { transform: scale(0.95); }
+
+        .modal-content { border-radius: 24px 24px 0 0; border: none; }
+        @media (max-width: 576px) {
+            .modal-dialog { margin: auto; position: absolute; bottom: 0; width: 100%; }
+        }
+
+        .chart-container { position: relative; height: 220px; width: 100%; }
+    </style>
+</head>
+<body>
+
+    <div class="app-header">
+        <h5 class="mb-0 fw-bold"><i class="bi bi-wallet2 text-primary"></i> Finance App</h5>
+        <div>
+            <a href="debt.html" class="btn btn-light btn-sm rounded-pill shadow-sm me-2 text-decoration-none fw-bold text-danger">
+                <i class="bi bi-bank"></i> Debt Tracker
+            </a>
+            <button onclick="exportData()" class="btn btn-light btn-sm rounded-circle shadow-sm me-1" title="Export"><i class="bi bi-download"></i></button>
+            <label class="btn btn-light btn-sm rounded-circle shadow-sm mb-0" title="Import">
+                <i class="bi bi-upload"></i>
+                <input type="file" hidden onchange="importData(event)">
+            </label>
+        </div>
+    </div>
+
+    <div class="container py-4">
+        
+        <div class="card card-custom card-balance p-4 mb-3">
+            <h6 class="text-white-50 mb-1">Total Balance</h6>
+            <h2 id="balanceTotal" class="fw-bold mb-0">€0.00</h2>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-6">
+                <div class="card card-custom card-income p-3 h-100">
+                    <small class="text-uppercase fw-bold opacity-75 d-block mb-1"><i class="bi bi-arrow-down-left-circle"></i> Income</small>
+                    <h5 id="incomeTotal" class="fw-bold mb-0">€0.00</h5>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="card card-custom card-expense p-3 h-100">
+                    <small class="text-uppercase fw-bold opacity-75 d-block mb-1"><i class="bi bi-arrow-up-right-circle"></i> Expenses</small>
+                    <h5 id="expenseTotal" class="fw-bold mb-0">€0.00</h5>
+                </div>
+            </div>
+        </div>
+
+        <h6 class="fw-bold mb-3 text-secondary">Analytics</h6>
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-md-6">
+                <div class="card card-custom p-3">
+                    <h6 class="text-center text-muted mb-3 fs-6">Expense Distribution</h6>
+                    <div class="chart-container"><canvas id="expenseChart"></canvas></div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6">
+                <div class="card card-custom p-3">
+                    <h6 class="text-center text-muted mb-3 fs-6">Income vs Expenses</h6>
+                    <div class="chart-container"><canvas id="trendChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card card-custom p-3 mb-4 bg-white border border-info border-opacity-25">
+            <h6 class="text-info fw-bold mb-2"><i class="bi bi-lightbulb"></i> Insights</h6>
+            <ul id="analytics" class="mb-0 ps-3 text-muted small">
+                <li>Add some entries to see insights!</li>
+            </ul>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold mb-0 text-secondary">Recent Transactions</h6>
+        </div>
+        <div id="transactionList"></div>
+
+    </div>
+
+    <button class="fab" data-bs-toggle="modal" data-bs-target="#addEntryModal">
+        <i class="bi bi-plus"></i>
+    </button>
+
+    <div class="modal fade" id="addEntryModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content p-2">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">Add Entry</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label text-muted small">Transaction Type</label>
+                            <select id="type" class="form-select form-select-lg">
+                                <option value="income">Income</option>
+                                <option value="expense" selected>Expense</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label text-muted small">Category</label>
+                            <select id="category" class="form-select form-select-lg">
+                                <option value="Salary">💼 Salary</option>
+                                <option value="Freelance">🧑‍💻 Freelance</option>
+                                <option value="Rent">🏠 Rent</option>
+                                <option value="Food">🍔 Food</option>
+                                <option value="Transport">🚗 Transport</option>
+                                <option value="Shopping">🛍 Shopping</option>
+                                <option value="Subscriptions">📺 Subscriptions</option>
+                                <option value="Travel">✈️ Travel</option>
+                                <option value="Utilities">💡 Utilities</option>
+                                <option value="Other">📦 Other</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small">Amount (€)</label>
+                            <input id="amount" type="number" step="0.01" class="form-control form-control-lg" placeholder="0.00">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small">Month</label>
+                            <input id="month" type="month" class="form-control form-control-lg">
+                        </div>
+                        
+                        <div class="col-12 mt-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="recurring">
+                                <label class="form-check-label text-muted" for="recurring">Make this a recurring monthly transaction</label>
+                            </div>
+                        </div>
+
+                        <div class="col-12 mt-4">
+                            <button onclick="addEntry()" class="btn btn-primary btn-lg w-100 rounded-pill">Save Transaction</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW failed: ', err));
+            });
+        }
+    </script>
+
+    <script>
+        let entries = JSON.parse(localStorage.getItem("financeData")) || [];
+        let expenseChart;
+        let trendChart;
+
+        // Custom Colors and Icons for Each Category
+        const categoryMap = {
+            "Salary": { icon: "💼", bg: "#d1e7dd", color: "#0f5132" },         // Green
+            "Freelance": { icon: "🧑‍💻", bg: "#cff4fc", color: "#055160" },      // Cyan
+            "Rent": { icon: "🏠", bg: "#e0cffc", color: "#3d087b" },          // Purple
+            "Food": { icon: "🍔", bg: "#fff3cd", color: "#664d03" },          // Yellow
+            "Transport": { icon: "🚗", bg: "#cfe2ff", color: "#084298" },       // Blue
+            "Shopping": { icon: "🛍", bg: "#f8d7da", color: "#842029" },        // Pink
+            "Subscriptions": { icon: "📺", bg: "#f3d0e5", color: "#6a1a41" },   // Magenta
+            "Travel": { icon: "✈️", bg: "#d2f4ea", color: "#0a3622" },         // Mint
+            "Utilities": { icon: "💡", bg: "#ffdac1", color: "#854a00" },       // Orange
+            "Other": { icon: "📦", bg: "#e2e3e5", color: "#41464b" }           // Gray
+        };
+
+        document.getElementById('month').valueAsDate = new Date();
+
+        function save() {
+            localStorage.setItem("financeData", JSON.stringify(entries));
+        }
+
+        function processRecurringEntries() {
+            let today = new Date();
+            let currentMonthStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
+            let addedNew = false;
+            
+            let uniqueTemplates = [];
+            entries.filter(e => e.recurring).forEach(template => {
+                let exists = uniqueTemplates.find(t => t.type === template.type && t.category === template.category && t.amount === template.amount);
+                if (!exists) uniqueTemplates.push(template);
+            });
+
+            uniqueTemplates.forEach(template => {
+                if (template.month < currentMonthStr) {
+                    let existsInCurrentMonth = entries.find(e => 
+                        e.month === currentMonthStr && 
+                        e.type === template.type && 
+                        e.category === template.category && 
+                        e.amount === template.amount
+                    );
+
+                    if (!existsInCurrentMonth) {
+                        entries.push({
+                            type: template.type,
+                            category: template.category,
+                            amount: template.amount,
+                            month: currentMonthStr,
+                            recurring: true
+                        });
+                        addedNew = true;
+                    }
+                }
+            });
+
+            if (addedNew) save();
+        }
+
+        function addEntry() {
+            let type = document.getElementById("type").value;
+            let category = document.getElementById("category").value;
+            let amount = parseFloat(document.getElementById("amount").value);
+            let month = document.getElementById("month").value;
+            let recurring = document.getElementById("recurring").checked;
+
+            if (!amount || !month) {
+                alert("Please enter a valid amount and month.");
+                return;
+            }
+
+            entries.push({ type, category, amount, month, recurring });
+            save();
+            render();
+
+            document.getElementById("amount").value = "";
+            document.getElementById("recurring").checked = false;
+            let modalEl = document.getElementById('addEntryModal');
+            let modalInstance = bootstrap.Modal.getInstance(modalEl);
+            modalInstance.hide();
+        }
+
+        function deleteEntry(i) {
+            if(confirm("Are you sure you want to delete this entry?")) {
+                entries.splice(i, 1);
+                save();
+                render();
+            }
+        }
+
+        function exportData() {
+            let blob = new Blob([JSON.stringify(entries, null, 2)], { type: 'application/json' });
+            let url = URL.createObjectURL(blob);
+            let a = document.createElement("a");
+            a.href = url;
+            a.download = "finance_backup.json";
+            a.click();
+        }
+
+        function importData(e) {
+            let file = e.target.files[0];
+            if (!file) return;
+            let reader = new FileReader();
+            reader.onload = function (ev) {
+                try {
+                    entries = JSON.parse(ev.target.result);
+                    save();
+                    processRecurringEntries();
+                    render();
+                } catch(err) {
+                    alert("Invalid file format");
+                }
+            }
+            reader.readAsText(file);
+        }
+
+        function render() {
+            let list = document.getElementById("transactionList");
+            list.innerHTML = "";
+
+            let income = entries.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0);
+            let expense = entries.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0);
+
+            if (entries.length === 0) {
+                list.innerHTML = `<div class="text-center text-muted p-4">No transactions yet. Click + to add one!</div>`;
+            } else {
+                [...entries].reverse().forEach((e, reversedIndex) => {
+                    let i = entries.length - 1 - reversedIndex;
+                    let isIncome = e.type === 'income';
+                    let amountClass = isIncome ? 'text-success' : 'text-danger';
+                    let sign = isIncome ? '+' : '-';
+                    
+                    // Lookup category styling, default to 'Other' if not found
+                    let catInfo = categoryMap[e.category] || categoryMap["Other"];
+                    
+                    let recurringBadge = e.recurring ? `<i class="bi bi-repeat text-primary me-1" title="Recurring"></i>` : '';
+
+                    let item = `
+                    <div class="transaction-item">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-box" style="background-color: ${catInfo.bg}; color: ${catInfo.color};">
+                                ${catInfo.icon}
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold">${e.category}</h6>
+                                <small class="text-muted">${recurringBadge} ${e.month}</small>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <h6 class="mb-0 fw-bold ${amountClass}">${sign}€${e.amount.toFixed(2)}</h6>
+                            <button onclick="deleteEntry(${i})" class="btn btn-link text-danger p-0 mt-1 text-decoration-none" style="font-size: 0.75rem;">Delete</button>
+                        </div>
+                    </div>`;
+                    list.innerHTML += item;
+                });
+            }
+
+            updateSummary(income, expense);
+            updateCharts();
+            updateAnalytics(income, expense);
+        }
+
+        function updateSummary(income, expense) {
+            let balance = income - expense;
+            document.getElementById("incomeTotal").innerText = "€" + income.toFixed(2);
+            document.getElementById("expenseTotal").innerText = "€" + expense.toFixed(2);
+            document.getElementById("balanceTotal").innerText = "€" + balance.toFixed(2);
+        }
+
+        function updateCharts() {
+            let map = {};
+            entries.filter(e => e.type === 'expense').forEach(e => {
+                map[e.category] = (map[e.category] || 0) + e.amount;
+            });
+
+            let labels = Object.keys(map);
+            let values = Object.values(map);
+
+            if (expenseChart) expenseChart.destroy();
+            let ctxExp = document.getElementById("expenseChart");
+            if(values.length > 0) {
+                expenseChart = new Chart(ctxExp, {
+                    type: "doughnut",
+                    data: {
+                        labels: labels,
+                        datasets: [{ 
+                            data: values,
+                            backgroundColor: ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6']
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } } }
+                });
+            } else {
+                ctxExp.getContext("2d").clearRect(0, 0, ctxExp.width, ctxExp.height);
+            }
+
+            let incomeTotal = entries.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0);
+            let expenseTotal = entries.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0);
+
+            if (trendChart) trendChart.destroy();
+            trendChart = new Chart(document.getElementById("trendChart"), {
+                type: "bar",
+                data: {
+                    labels: ['Income', 'Expenses'],
+                    datasets: [{
+                        label: 'Amount (€)',
+                        data: [incomeTotal, expenseTotal],
+                        backgroundColor: ['#10B981', '#EF4444'],
+                        borderRadius: 6
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+            });
+        }
+
+        function updateAnalytics(income, expense) {
+            let analytics = document.getElementById("analytics");
+            analytics.innerHTML = "";
+
+            if (income === 0 && expense === 0) {
+                analytics.innerHTML = "<li>Add some entries to see insights!</li>";
+                return;
+            }
+
+            if (income > 0) {
+                let savings = ((income - expense) / income * 100).toFixed(1);
+                analytics.innerHTML += `<li><strong>Savings rate:</strong> ${savings}% of income saved.</li>`;
+            }
+
+            let catTotals = {};
+            entries.filter(e => e.type === 'expense').forEach(e => {
+                catTotals[e.category] = (catTotals[e.category] || 0) + e.amount;
+            });
+
+            let biggest = Object.entries(catTotals).sort((a, b) => b[1] - a[1])[0];
+            if (biggest) {
+                analytics.innerHTML += `<li><strong>Top expense:</strong> ${biggest[0]} (€${biggest[1].toFixed(2)}).</li>`;
+            }
+        }
+
+        // Initialize App
+        processRecurringEntries(); 
+        render();
+
+    </script>
+</body>
+</html>

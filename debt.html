@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="theme-color" content="#4F46E5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Debt Tracker - Finance App</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #4F46E5; 
+            --bg-color: #f8f9fa;
+            --nav-height: 65px;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            padding-bottom: calc(var(--nav-height) + 20px);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app-header {
+            background: #fff;
+            padding: 16px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Bottom Navigation Bar - Now 4 Tabs */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: var(--nav-height);
+            background: #fff;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 1040;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        .nav-item {
+            text-align: center;
+            color: #9ca3af;
+            font-size: 0.70rem;
+            text-decoration: none;
+            flex-grow: 1;
+            padding: 8px 0;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .nav-item i { font-size: 1.3rem; display: block; margin-bottom: 2px; }
+        .nav-item.active { color: var(--primary-color); font-weight: bold; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card-custom {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+        }
+
+        .card-debt-total { background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); color: white; }
+        .card-emi { background: #fdeaea; color: #b02a37; }
+
+        .loan-item {
+            background: #fff;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+
+        .icon-box {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-right: 16px;
+            background: #e0e7ff; 
+            color: var(--primary-color);
+        }
+
+        .fab {
+            position: fixed;
+            bottom: calc(var(--nav-height) + 16px);
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 28px;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+            border: none;
+            z-index: 1030;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .fab:active { transform: scale(0.95); }
+
+        .modal-content { border-radius: 24px 24px 0 0; border: none; }
+        @media (max-width: 576px) {
+            .modal-dialog { margin: auto; position: absolute; bottom: 0; width: 100%; }
+        }
+
+        .chart-container { position: relative; height: 220px; width: 100%; }
+        
+        .table-container {
+            max-height: 400px; 
+            overflow-y: auto; 
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid #e0e7ff;
+        }
+        .table-container thead th {
+            position: sticky;
+            top: 0;
+            background: #e0e7ff;
+            color: #3730a3;
+            z-index: 2;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+        .table-container td { font-size: 0.8rem; white-space: nowrap; vertical-align: middle; }
+    </style>
+</head>
+<body>
+
+    <div class="app-header">
+        <h5 class="mb-0 fw-bold"><i class="bi bi-bank text-primary"></i> Debt Tracker</h5>
+        <div>
+            <a href="index.html" class="btn btn-light btn-sm rounded-pill shadow-sm text-decoration-none fw-bold text-secondary">
+                <i class="bi bi-wallet2 text-primary"></i> Main App
+            </a>
+        </div>
+    </div>
+
+    <div class="container py-4">
+        
+        <div id="tab-dashboard" class="tab-content active">
+            <div class="card card-custom card-debt-total p-4 mb-3">
+                <h6 class="text-white-50 mb-1">Total Outstanding Debt</h6>
+                <h2 id="totalDebt" class="fw-bold mb-0">₹0</h2>
+            </div>
+
+            <div class="card card-custom p-3 mb-3 bg-white">
+                <h6 class="text-muted mb-2 fw-bold" style="font-size: 0.85rem;"><i class="bi bi-bar-chart-fill text-primary"></i> Overall Payoff Progress</h6>
+                <div class="d-flex justify-content-between small mb-1 fw-bold">
+                    <span class="text-success">Paid: ₹<span id="totalPaidTxt">0</span></span>
+                    <span class="text-danger">Left: ₹<span id="totalLeftTxt">0</span></span>
+                </div>
+                <div class="progress mb-2" style="height: 16px; border-radius: 8px; background-color: #f8f9fa;">
+                    <div id="payoffProgress" class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;">0%</div>
+                </div>
+                <div class="text-center small text-muted">Original Loan Total: <strong>₹<span id="totalOriginalTxt">0</span></strong></div>
+            </div>
+
+            <div class="card card-custom card-emi p-3 mb-4">
+                <small class="text-uppercase fw-bold opacity-75 d-block mb-1"><i class="bi bi-calendar-x"></i> Total Monthly EMI</small>
+                <h5 id="totalEmi" class="fw-bold mb-0">₹0</h5>
+            </div>
+
+            <div class="card card-custom p-3 mb-2">
+                <h6 class="text-center text-muted mb-3 fs-6">Debt Distribution</h6>
+                <div class="chart-container"><canvas id="debtChart"></canvas></div>
+            </div>
+        </div>
+
+        <div id="tab-tracker" class="tab-content">
+            <h6 class="fw-bold mb-3 text-secondary">Monthly EMI Tracker</h6>
+            
+            <div class="card card-custom p-3 mb-3 bg-white border border-primary border-opacity-25">
+                <label class="form-label text-muted small mb-1 fw-bold"><i class="bi bi-calendar-month text-primary"></i> Select Month</label>
+                <input type="month" id="trackerMonth" class="form-control form-control-lg text-primary fw-bold" style="background-color: #e0e7ff; border:none;" onchange="renderTracker()">
+            </div>
+
+            <div id="trackerList">
+                </div>
+        </div>
+
+        <div id="tab-loans" class="tab-content">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0 text-secondary">Active Loans</h6>
+                <select id="sortLoans" class="form-select form-select-sm w-auto border-primary border-opacity-25 text-primary fw-bold" style="background-color: #e0e7ff;" onchange="renderLoansList()">
+                    <option value="desc">Highest Balance</option>
+                    <option value="asc">Lowest Balance</option>
+                </select>
+            </div>
+            
+            <div id="loanList"></div>
+            
+            <div class="text-center mt-4">
+                <small class="text-muted">Tap the + button to add a new loan</small>
+            </div>
+        </div>
+
+        <div id="tab-planner" class="tab-content">
+            <h6 class="fw-bold mb-3 text-secondary">Payoff Simulator</h6>
+            <div class="card card-custom p-3 mb-4 bg-white border border-primary border-opacity-25">
+                <div class="row g-2 mb-3">
+                    <div class="col-12">
+                        <label class="form-label text-muted small mb-1">Closing Strategy</label>
+                        <select id="strategy" class="form-select form-select-sm border-primary border-opacity-25" onchange="runSimulation()">
+                            <option value="avalanche">Avalanche (Highest Interest First)</option>
+                            <option value="snowball">Snowball (Smallest Balance First)</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label text-muted small mb-1">Extra Monthly (₹)</label>
+                        <input id="simExtra" type="number" class="form-control form-control-sm border-primary border-opacity-25" placeholder="e.g. 5000" oninput="runSimulation()">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label text-muted small mb-1">One-Time Lumpsum (₹)</label>
+                        <input id="simLumpsum" type="number" class="form-control form-control-sm border-primary border-opacity-25" placeholder="e.g. 50000" oninput="runSimulation()">
+                    </div>
+                </div>
+                <div id="simResult" class="alert alert-success mb-0 small p-2 text-center" style="display:none;"></div>
+            </div>
+
+            <div id="scheduleCard" class="card card-custom p-3 mb-4 bg-white" style="display:none;">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="text-muted mb-0 fw-bold" style="font-size: 0.9rem;"><i class="bi bi-table text-primary"></i> Month-by-Month</h6>
+                    <div class="btn-group" role="group">
+                        <input type="radio" class="btn-check" name="tableMode" id="modeBalance" autocomplete="off" checked onchange="switchTableMode('balance')">
+                        <label class="btn btn-outline-primary btn-sm px-2 py-1" for="modeBalance" style="font-size: 0.75rem;">Balances</label>
+                        
+                        <input type="radio" class="btn-check" name="tableMode" id="modeEmi" autocomplete="off" onchange="switchTableMode('payment')">
+                        <label class="btn btn-outline-primary btn-sm px-2 py-1" for="modeEmi" style="font-size: 0.75rem;">Payments</label>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="table table-hover text-center mb-0">
+                        <thead id="scheduleHead"></thead>
+                        <tbody id="scheduleBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('dashboard', this)">
+            <i class="bi bi-grid-fill"></i>
+            Dashboard
+        </div>
+        <div class="nav-item" onclick="switchTab('tracker', this)">
+            <i class="bi bi-check2-square"></i>
+            Tracker
+        </div>
+        <div class="nav-item" onclick="switchTab('loans', this)">
+            <i class="bi bi-card-list"></i>
+            Loans
+        </div>
+        <div class="nav-item" onclick="switchTab('planner', this)">
+            <i class="bi bi-calendar-check"></i>
+            Planner
+        </div>
+    </div>
+
+    <button class="fab" data-bs-toggle="modal" data-bs-target="#addLoanModal">
+        <i class="bi bi-plus"></i>
+    </button>
+
+    <div class="modal fade" id="addLoanModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content p-2">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">Add Loan</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label text-muted small">Loan Name</label>
+                            <input id="loanName" type="text" class="form-control form-control-lg" placeholder="e.g. Car Loan">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label text-muted small">Original Loan Amount (₹)</label>
+                            <input id="loanOriginal" type="number" class="form-control form-control-lg" placeholder="Total initially borrowed">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label text-muted small">Current Outstanding Balance (₹)</label>
+                            <input id="loanBalance" type="number" class="form-control form-control-lg" placeholder="0">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small">Annual Interest Rate (%)</label>
+                            <input id="loanRate" type="number" step="0.1" class="form-control form-control-lg" placeholder="e.g. 10.5">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small">Monthly EMI (₹)</label>
+                            <input id="loanEmi" type="number" class="form-control form-control-lg" placeholder="0">
+                        </div>
+                        <div class="col-12 mt-4">
+                            <button onclick="addLoan()" class="btn btn-primary btn-lg w-100 rounded-pill">Save Loan</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let loans = JSON.parse(localStorage.getItem("financeDebtData")) || [];
+        
+        // Data Check for existing users to prevent breaking
+        loans.forEach(l => {
+            if (typeof l.originalAmount === 'undefined') l.originalAmount = l.balance; 
+            if (typeof l.paymentHistory === 'undefined') l.paymentHistory = {}; 
+        });
+
+        // Set default tracker month to current month
+        let today = new Date();
+        document.getElementById('trackerMonth').value = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
+
+        let debtChart;
+        let globalScheduleData = [];
+        let currentTableMode = 'balance'; 
+
+        // -- Tab Navigation Logic --
+        function switchTab(tabName, element) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.add('active');
+            document.querySelectorAll('.bottom-nav .nav-item').forEach(nav => nav.classList.remove('active'));
+            element.classList.add('active');
+            if(tabName === 'dashboard') updateCharts();
+        }
+
+        function formatINR(number) {
+            return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(number);
+        }
+
+        function save() {
+            localStorage.setItem("financeDebtData", JSON.stringify(loans));
+        }
+
+        function addLoan() {
+            let name = document.getElementById("loanName").value;
+            let originalAmount = parseFloat(document.getElementById("loanOriginal").value);
+            let balance = parseFloat(document.getElementById("loanBalance").value);
+            let rate = parseFloat(document.getElementById("loanRate").value);
+            let emi = parseFloat(document.getElementById("loanEmi").value);
+
+            if (!name || !balance || !rate || !emi) {
+                alert("Please fill out all required fields.");
+                return;
+            }
+            if (!originalAmount || originalAmount < balance) originalAmount = balance; 
+
+            // Initialize with an empty payment history
+            loans.push({ name, originalAmount, balance, rate, emi, paymentHistory: {} });
+            save();
+            renderAll();
+
+            document.getElementById("loanName").value = "";
+            document.getElementById("loanOriginal").value = "";
+            document.getElementById("loanBalance").value = "";
+            document.getElementById("loanRate").value = "";
+            document.getElementById("loanEmi").value = "";
+            let modalEl = document.getElementById('addLoanModal');
+            bootstrap.Modal.getInstance(modalEl).hide();
+            
+            switchTab('loans', document.querySelectorAll('.nav-item')[2]);
+        }
+
+        function deleteLoan(originalIndex) {
+            if(confirm("Are you sure you want to delete this loan?")) {
+                loans.splice(originalIndex, 1);
+                save();
+                renderAll();
+            }
+        }
+
+        // -- NEW: Monthly Tracker Logic --
+        function togglePayment(loanIndex, monthStr) {
+            let l = loans[loanIndex];
+            
+            if (l.paymentHistory[monthStr] !== undefined) {
+                // UNDO Payment
+                let deductedPrincipal = l.paymentHistory[monthStr];
+                l.balance += deductedPrincipal;
+                delete l.paymentHistory[monthStr];
+            } else {
+                // MARK AS PAID
+                if (l.balance <= 0) return; // Already completely paid off
+                
+                let interest = l.balance * (l.rate / 100 / 12);
+                let principal = l.emi - interest;
+                
+                if (principal < 0) principal = 0; // Prevent negative amortization from breaking UI
+                if (principal > l.balance) principal = l.balance; // Final payment cap
+                
+                l.balance -= principal;
+                l.paymentHistory[monthStr] = principal; // Store exactly how much was deducted so we can safely undo
+            }
+            
+            save();
+            renderAll();
+        }
+
+        function renderTracker() {
+            let list = document.getElementById("trackerList");
+            let monthStr = document.getElementById("trackerMonth").value;
+            list.innerHTML = "";
+
+            if (loans.length === 0) {
+                list.innerHTML = `<div class="text-center text-muted p-4">No loans tracked. Add a loan to start checking off payments.</div>`;
+                return;
+            }
+
+            let hasVisibleLoans = false;
+
+            loans.forEach((l, idx) => {
+                // Only show loans that have a balance OR were paid off in this specific month
+                let isPaid = l.paymentHistory[monthStr] !== undefined;
+                if (l.balance > 0 || isPaid) {
+                    hasVisibleLoans = true;
+                    
+                    let buttonHtml = isPaid 
+                        ? `<button onclick="togglePayment(${idx}, '${monthStr}')" class="btn btn-success btn-sm rounded-pill px-3 shadow-sm"><i class="bi bi-check-circle-fill"></i> Paid</button>`
+                        : `<button onclick="togglePayment(${idx}, '${monthStr}')" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-bold">Mark Paid</button>`;
+
+                    let item = `
+                    <div class="loan-item d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-box" style="width: 40px; height: 40px; font-size: 18px;">
+                                <i class="bi bi-bank"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold">${l.name}</h6>
+                                <small class="text-danger fw-bold">EMI: ₹${formatINR(l.emi)}</small>
+                            </div>
+                        </div>
+                        <div>
+                            ${buttonHtml}
+                        </div>
+                    </div>`;
+                    list.innerHTML += item;
+                }
+            });
+
+            if(!hasVisibleLoans) {
+                list.innerHTML = `<div class="text-center text-muted p-4">No active payments required for this month! 🎉</div>`;
+            }
+        }
+
+        // -- Simulator & Core Logic --
+        function calculateBaseline() {
+            let simLoans = JSON.parse(JSON.stringify(loans));
+            let totalInterest = 0;
+            let months = 0;
+            let active = simLoans.filter(l => l.balance > 0);
+            
+            while(active.length > 0 && months < 600) { 
+                months++;
+                for(let l of active) {
+                    let interest = l.balance * (l.rate / 100 / 12);
+                    totalInterest += interest;
+                    let principal = l.emi - interest;
+                    
+                    if(principal <= 0) return { error: true }; 
+                    if(l.balance <= principal) l.balance = 0;
+                    else l.balance -= principal;
+                }
+                active = active.filter(l => l.balance > 0);
+            }
+            return { months, interest: totalInterest, error: false };
+        }
+
+        function runSimulation() {
+            let resDiv = document.getElementById('simResult');
+            let schedCard = document.getElementById('scheduleCard');
+
+            if(loans.length === 0 || loans.every(l => l.balance <= 0)) {
+                resDiv.style.display = 'none';
+                schedCard.style.display = 'none';
+                return;
+            }
+
+            let strategy = document.getElementById('strategy').value;
+            let extraMonthly = parseFloat(document.getElementById('simExtra').value) || 0;
+            let lumpsum = parseFloat(document.getElementById('simLumpsum').value) || 0;
+
+            let baseline = calculateBaseline();
+            let simLoans = JSON.parse(JSON.stringify(loans)).map((l, idx) => ({ ...l, _id: idx }));
+            globalScheduleData = [];
+            let today = new Date();
+
+            const sortLoans = (arr) => {
+                if (strategy === 'snowball') arr.sort((a, b) => a.balance - b.balance);
+                else arr.sort((a, b) => b.rate - a.rate);
+            };
+
+            let month0Payments = {};
+            if(lumpsum > 0) {
+                sortLoans(simLoans);
+                let remainingLumpsum = lumpsum;
+                for(let l of simLoans) {
+                    if(remainingLumpsum <= 0) { month0Payments[l._id] = 0; continue; }
+                    if(l.balance <= remainingLumpsum) {
+                        month0Payments[l._id] = l.balance;
+                        remainingLumpsum -= l.balance;
+                        l.balance = 0;
+                    } else {
+                        month0Payments[l._id] = remainingLumpsum;
+                        l.balance -= remainingLumpsum;
+                        remainingLumpsum = 0;
+                    }
+                }
+            }
+
+            let startRow = { date: new Date(today.getFullYear(), today.getMonth(), 1), balances: {}, payments: {} };
+            simLoans.forEach(l => {
+                startRow.balances[l._id] = l.balance;
+                startRow.payments[l._id] = month0Payments[l._id] || 0;
+            });
+            globalScheduleData.push(startRow);
+
+            let totalInterest = 0;
+            let months = 0;
+            let active = simLoans.filter(l => l.balance > 0);
+
+            while(active.length > 0 && months < 600) {
+                months++;
+                sortLoans(active);
+                let rollover = extraMonthly;
+                let monthPayments = {};
+
+                for(let l of active) {
+                    let interest = l.balance * (l.rate / 100 / 12);
+                    totalInterest += interest;
+                    let required = l.balance + interest;
+
+                    if (l.emi >= required) {
+                        rollover += (l.emi - required); 
+                        monthPayments[l._id] = required;
+                        l.balance = 0;
+                    } else {
+                        monthPayments[l._id] = l.emi;
+                        let principal = l.emi - interest;
+                        if(principal > 0) l.balance -= principal;
+                    }
+                }
+
+                active = active.filter(l => l.balance > 0);
+                if(rollover > 0 && active.length > 0) {
+                    let target = active[0];
+                    if(target.balance <= rollover) {
+                        monthPayments[target._id] += target.balance;
+                        target.balance = 0; 
+                    } else {
+                        monthPayments[target._id] += rollover;
+                        target.balance -= rollover;
+                    }
+                }
+                
+                active = active.filter(l => l.balance > 0);
+
+                let row = { date: new Date(today.getFullYear(), today.getMonth() + months, 1), balances: {}, payments: {} };
+                simLoans.forEach(l => {
+                    row.balances[l._id] = l.balance;
+                    row.payments[l._id] = monthPayments[l._id] || 0;
+                });
+                globalScheduleData.push(row);
+            }
+
+            resDiv.style.display = 'block';
+            if (baseline.error) {
+                resDiv.innerHTML = `⚠️ <strong>Warning:</strong> One of your loans has an EMI lower than the interest generated.`;
+                resDiv.className = "alert alert-danger mb-0 small p-2 text-center";
+                schedCard.style.display = 'none';
+                return;
+            }
+
+            resDiv.className = "alert alert-success mb-0 small p-2 text-center";
+            let yrs = Math.floor(months / 12);
+            let mos = months % 12;
+            let timeStr = yrs > 0 ? `${yrs}y ${mos}m` : `${mos} months`;
+
+            let interestSaved = Math.max(0, baseline.interest - totalInterest);
+            let timeSaved = Math.max(0, baseline.months - months);
+            let savedYrs = Math.floor(timeSaved / 12);
+            let savedMos = timeSaved % 12;
+            let savedTimeStr = savedYrs > 0 ? `${savedYrs}y ${savedMos}m` : `${savedMos}m`;
+
+            let html = `<strong>Optimized Plan:</strong> Debt-free in <strong>${timeStr}</strong>!<br>`;
+            if (interestSaved > 0 || timeSaved > 0) {
+                html += `<span class="text-danger mt-1 d-block">`;
+                if(timeSaved > 0) html += `⏱ Saved ${savedTimeStr} &nbsp; `;
+                if(interestSaved > 0) html += `💰 Saved ₹${formatINR(interestSaved)}`;
+                html += `</span>`;
+            } else {
+                html += `<span class="text-muted mt-1 d-block">You are on the baseline path. Add extra payments to speed up!</span>`;
+            }
+            resDiv.innerHTML = html;
+
+            schedCard.style.display = 'block';
+            renderScheduleTable();
+        }
+
+        function switchTableMode(mode) {
+            currentTableMode = mode;
+            renderScheduleTable();
+        }
+
+        function renderScheduleTable() {
+            let thead = document.getElementById('scheduleHead');
+            let tbody = document.getElementById('scheduleBody');
+
+            let thHtml = `<tr><th>Month</th>`;
+            loans.forEach(l => { thHtml += `<th>${l.name}</th>`; });
+            thHtml += `</tr>`;
+            thead.innerHTML = thHtml;
+
+            let tbHtml = '';
+            globalScheduleData.forEach((row, index) => {
+                let dateStr = row.date.toLocaleString('default', { month: 'short', year: 'numeric' });
+                let isMonthZero = (index === 0);
+                
+                let trClass = isMonthZero ? 'table-primary fw-bold' : ''; 
+                let monthLabel = isMonthZero ? `${dateStr} (Now)` : dateStr;
+
+                tbHtml += `<tr class="${trClass}"><td>${monthLabel}</td>`;
+                
+                loans.forEach((l, idx) => {
+                    let bal = row.balances[idx];
+                    let pay = row.payments[idx];
+
+                    if (currentTableMode === 'balance') {
+                        if (bal <= 0) tbHtml += `<td class="text-success fw-bold">✅ Paid</td>`;
+                        else tbHtml += `<td>₹${formatINR(Math.round(bal))}</td>`;
+                    } else {
+                        if (pay > 0) {
+                            let payText = `₹${formatINR(Math.round(pay))}`;
+                            if(isMonthZero) payText += ' (Lumpsum)';
+                            tbHtml += `<td class="text-danger">${payText}</td>`;
+                        } else {
+                            tbHtml += `<td class="text-muted">-</td>`;
+                        }
+                    }
+                });
+                tbHtml += `</tr>`;
+            });
+            tbody.innerHTML = tbHtml;
+        }
+
+        function renderLoansList() {
+            let list = document.getElementById("loanList");
+            list.innerHTML = "";
+
+            if (loans.length === 0) {
+                list.innerHTML = `<div class="text-center text-muted p-4">No loans tracked. Click + to add your first debt!</div>`;
+                return;
+            }
+
+            let sortOrder = document.getElementById("sortLoans").value;
+            let displayLoans = [...loans].map((loan, idx) => ({ ...loan, originalIndex: idx }));
+            
+            displayLoans.sort((a, b) => {
+                if (sortOrder === 'desc') return b.balance - a.balance; 
+                return a.balance - b.balance;                           
+            });
+
+            displayLoans.forEach(l => {
+                let paidAmount = l.originalAmount - l.balance;
+                let pct = Math.min(100, Math.max(0, (paidAmount / l.originalAmount) * 100));
+
+                let item = `
+                <div class="loan-item">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div class="d-flex align-items-center">
+                            <div class="icon-box"><i class="bi bi-bank"></i></div>
+                            <div class="w-100">
+                                <h6 class="mb-0 fw-bold">${l.name}</h6>
+                                <small class="text-danger fw-bold">${l.rate}% Interest</small>
+                            </div>
+                        </div>
+                        <div>
+                            <button onclick="deleteLoan(${l.originalIndex})" class="btn btn-link text-muted p-0 text-decoration-none border-0 bg-transparent"><i class="bi bi-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="progress mt-3 mb-2" style="height: 6px;">
+                        <div class="progress-bar bg-success" style="width: ${pct}%"></div>
+                    </div>
+                    <div class="row text-center mt-3 g-1 border-top pt-2">
+                        <div class="col-6 border-end">
+                            <small class="text-muted d-block" style="font-size:10px">BALANCE</small>
+                            <span class="fw-bold">₹${formatINR(l.balance)}</span>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block" style="font-size:10px">MONTHLY EMI</small>
+                            <span class="fw-bold text-danger">₹${formatINR(l.emi)}</span>
+                        </div>
+                    </div>
+                </div>`;
+                list.innerHTML += item;
+            });
+        }
+
+        function renderAll() {
+            let totalLeft = 0;
+            let totalEmi = 0;
+            let totalOriginal = 0;
+
+            loans.forEach((l) => {
+                totalLeft += l.balance;
+                totalEmi += l.emi;
+                totalOriginal += l.originalAmount;
+            });
+
+            document.getElementById("totalDebt").innerText = "₹" + formatINR(totalLeft);
+            document.getElementById("totalEmi").innerText = "₹" + formatINR(totalEmi);
+
+            let totalPaid = totalOriginal - totalLeft;
+            let overallPct = totalOriginal > 0 ? ((totalPaid / totalOriginal) * 100).toFixed(1) : 0;
+            
+            document.getElementById("totalOriginalTxt").innerText = formatINR(totalOriginal);
+            document.getElementById("totalPaidTxt").innerText = formatINR(totalPaid);
+            document.getElementById("totalLeftTxt").innerText = formatINR(totalLeft);
+            
+            let pBar = document.getElementById("payoffProgress");
+            pBar.style.width = `${overallPct}%`;
+            pBar.innerText = `${overallPct}%`;
+
+            renderTracker();
+            renderLoansList();
+            updateCharts();
+            runSimulation();
+        }
+
+        function updateCharts() {
+            let labels = loans.map(l => l.name);
+            let values = loans.map(l => l.balance);
+
+            if (debtChart) debtChart.destroy();
+            let ctx = document.getElementById("debtChart");
+            if(values.length > 0 && values.some(v => v > 0)) {
+                debtChart = new Chart(ctx, {
+                    type: "doughnut",
+                    data: {
+                        labels: labels,
+                        datasets: [{ 
+                            data: values,
+                            backgroundColor: ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6']
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } } }
+                });
+            } else {
+                ctx.getContext("2d").clearRect(0, 0, ctx.width, ctx.height);
+            }
+        }
+
+        // Initialize App
+        renderAll();
+
+    </script>
+</body>
+</html>
