@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta name="theme-color" content="#4F46E5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Pocket Budget</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #4F46E5;
+            --bg-color: #f8f9fa;
+        }
+
+        /* Fluid native app behavior */
+        html, body {
+            background-color: var(--bg-color);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            padding-bottom: 80px;
+            -webkit-font-smoothing: antialiased;
+            overscroll-behavior-y: none; 
+        }
+
+        ::-webkit-scrollbar { display: none; }
+        * { scrollbar-width: none; }
+
+        .app-header {
+            background: #fff;
+            padding: 16px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* NEW: Dropdown Menu Styling */
+        .dropdown-menu-custom {
+            border-radius: 16px;
+            border: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 8px;
+            min-width: 220px;
+        }
+        
+        .dropdown-item-custom {
+            border-radius: 10px;
+            padding: 10px 16px;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            font-size: 0.95rem;
+            color: #4b5563;
+        }
+
+        .dropdown-item-custom:hover, .dropdown-item-custom:active {
+            background-color: #f3f4f6;
+        }
+
+        .card-custom {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+        }
+
+        .card-balance { background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); color: white; }
+        .card-income { background: #e8f7ec; color: #146c43; }
+        .card-expense { background: #fdeaea; color: #b02a37; }
+
+        .swipe-container {
+            position: relative;
+            border-radius: 16px;
+            margin-bottom: 12px;
+            background: #f8d7da; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            overflow: hidden;
+        }
+
+        .swipe-actions {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 12px;
+            gap: 8px;
+            width: 100%;
+            z-index: 1;
+        }
+
+        .btn-swipe {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            transition: transform 0.1s;
+        }
+        .btn-swipe:active { transform: scale(0.9); }
+        .btn-swipe.edit { background-color: var(--primary-color); }
+        .btn-swipe.delete { background-color: #dc3545; }
+
+        .swipe-front {
+            position: relative;
+            background: #fff;
+            padding: 16px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 2;
+            will-change: transform;
+            transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
+        }
+
+        .icon-box {
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+
+        .fab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
+            background: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+            border: none;
+            z-index: 1050;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .fab:active { transform: scale(0.95); }
+
+        .modal-content { border-radius: 24px 24px 0 0; border: none; }
+        @media (max-width: 576px) {
+            .modal-dialog { margin: auto; position: absolute; bottom: 0; width: 100%; }
+        }
+        .chart-container { position: relative; height: 220px; width: 100%; }
+    </style>
+</head>
+<body>
+
+    <div class="app-header">
+        <h5 class="mb-0 fw-bold"><i class="bi bi-wallet2 text-primary"></i> Pocket Budget</h5>
+        
+        <div class="dropdown">
+            <button class="btn btn-light border-0 shadow-sm rounded-circle d-flex align-items-center justify-content-center" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="width: 40px; height: 40px;">
+                <i class="bi bi-list fs-4 text-dark"></i>
+            </button>
+            
+            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-custom mt-2">
+                <li>
+                    <a class="dropdown-item dropdown-item-custom fw-bold text-danger" href="debt.html">
+                        <i class="bi bi-bank fs-5 me-3"></i> Switch to Debt Tracker
+                    </a>
+                </li>
+                <li><hr class="dropdown-divider my-2 border-secondary border-opacity-10"></li>
+                <li>
+                    <a class="dropdown-item dropdown-item-custom fw-bold" href="#" onclick="exportData()">
+                        <i class="bi bi-download fs-5 me-3 text-primary"></i> Export Backup
+                    </a>
+                </li>
+                <li>
+                    <label class="dropdown-item dropdown-item-custom fw-bold mb-0" style="cursor: pointer;">
+                        <i class="bi bi-upload fs-5 me-3 text-success"></i> Import Backup
+                        <input type="file" hidden onchange="importData(event)">
+                    </label>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="container py-4">
+        
+        <div class="card card-custom card-balance p-4 mb-3">
+            <h6 class="text-white-50 mb-1">Total Balance</h6>
+            <h2 id="balanceTotal" class="fw-bold mb-0">€0.00</h2>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-6">
+                <div class="card card-custom card-income p-3 h-100">
+                    <small class="text-uppercase fw-bold opacity-75 d-block mb-1"><i class="bi bi-arrow-down-left-circle"></i> Income</small>
+                    <h5 id="incomeTotal" class="fw-bold mb-0">€0.00</h5>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="card card-custom card-expense p-3 h-100">
+                    <small class="text-uppercase fw-bold opacity-75 d-block mb-1"><i class="bi bi-arrow-up-right-circle"></i> Expenses</small>
+                    <h5 id="expenseTotal" class="fw-bold mb-0">€0.00</h5>
+                </div>
+            </div>
+        </div>
+
+        <h6 class="fw-bold mb-3 text-secondary">Analytics</h6>
+        <div class="row g-3 mb-4">
+            <div class="col-12 col-md-6">
+                <div class="card card-custom p-3">
+                    <h6 class="text-center text-muted mb-3 fs-6">Expense Distribution</h6>
+                    <div class="chart-container"><canvas id="expenseChart"></canvas></div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6">
+                <div class="card card-custom p-3">
+                    <h6 class="text-center text-muted mb-3 fs-6">Income vs Expenses</h6>
+                    <div class="chart-container"><canvas id="trendChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card card-custom p-3 mb-4 bg-white border border-info border-opacity-25">
+            <h6 class="text-info fw-bold mb-2"><i class="bi bi-lightbulb"></i> Insights</h6>
+            <ul id="analytics" class="mb-0 ps-3 text-muted small">
+                <li>Add some entries to see insights!</li>
+            </ul>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold mb-0 text-secondary">Recent Transactions</h6>
+            <small class="text-muted" style="font-size: 0.7rem;"><i class="bi bi-arrows-collapse"></i> Swipe left to edit</small>
+        </div>
+        
+        <div id="transactionList"></div>
+
+    </div>
+
+    <button class="fab" onclick="openAddModal()">
+        <i class="bi bi-plus"></i>
+    </button>
+
+    <div class="modal fade" id="addEntryModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content p-2">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold" id="modalTitle">Add Entry</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label text-muted small">Transaction Type</label>
+                            <select id="type" class="form-select form-select-lg">
+                                <option value="income">Income</option>
+                                <option value="expense" selected>Expense</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-12">
+                            <label class="form-label text-muted small">Category</label>
+                            <select id="category" class="form-select form-select-lg" onchange="toggleCustomCategory()">
+                                </select>
+                        </div>
+
+                        <div class="col-12" id="customCategoryDiv" style="display: none;">
+                            <label class="form-label text-muted small">New Category Name (e.g., Gym, Pets, Coffee)</label>
+                            <input id="customCategoryName" type="text" class="form-control form-control-lg" placeholder="Type a category...">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label text-muted small">Description / Note (Optional)</label>
+                            <input id="description" type="text" class="form-control form-control-lg" placeholder="e.g. Groceries at Aldi">
+                        </div>
+
+                        <div class="col-6">
+                            <label class="form-label text-muted small">Amount (€)</label>
+                            <input id="amount" type="number" step="0.01" class="form-control form-control-lg" placeholder="0.00">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-muted small">Month</label>
+                            <input id="month" type="month" class="form-control form-control-lg">
+                        </div>
+                        
+                        <div class="col-12 mt-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="recurring">
+                                <label class="form-check-label text-muted" for="recurring">Make this a recurring monthly transaction</label>
+                            </div>
+                        </div>
+
+                        <div class="col-12 mt-4">
+                            <button id="saveBtn" onclick="saveEntry()" class="btn btn-primary btn-lg w-100 rounded-pill">Save Transaction</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW failed: ', err));
+            });
+        }
+    </script>
+
+    <script>
+        let entries = JSON.parse(localStorage.getItem("financeData")) || [];
+        let expenseChart;
+        let trendChart;
+        let currentEditIndex = -1;
+
+        const defaultCategoryMap = {
+            "Salary": { icon: "💼", bg: "#d1e7dd", color: "#0f5132" },
+            "Freelance": { icon: "🧑‍💻", bg: "#cff4fc", color: "#055160" },
+            "Rent": { icon: "🏠", bg: "#e0cffc", color: "#3d087b" },
+            "Food": { icon: "🍔", bg: "#fff3cd", color: "#664d03" },
+            "Transport": { icon: "🚗", bg: "#cfe2ff", color: "#084298" },
+            "Shopping": { icon: "🛍", bg: "#f8d7da", color: "#842029" },
+            "Subscriptions": { icon: "📺", bg: "#f3d0e5", color: "#6a1a41" },
+            "Travel": { icon: "✈️", bg: "#d2f4ea", color: "#0a3622" },
+            "Utilities": { icon: "💡", bg: "#ffdac1", color: "#854a00" },
+            "Other": { icon: "📦", bg: "#e2e3e5", color: "#41464b" }
+        };
+
+        let savedCategories = JSON.parse(localStorage.getItem("financeCategoryMap"));
+        let categoryMap = { ...defaultCategoryMap, ...(savedCategories || {}) };
+
+        document.getElementById('month').valueAsDate = new Date();
+
+        function save() {
+            localStorage.setItem("financeData", JSON.stringify(entries));
+            localStorage.setItem("financeCategoryMap", JSON.stringify(categoryMap));
+        }
+
+        function populateCategories() {
+            let select = document.getElementById("category");
+            let optionsHtml = "";
+            
+            Object.keys(categoryMap).forEach(cat => {
+                let icon = categoryMap[cat].icon;
+                optionsHtml += `<option value="${cat}">${icon} ${cat}</option>`;
+            });
+
+            optionsHtml += `<option value="custom" class="fw-bold text-primary">➕ Add Custom Category...</option>`;
+            select.innerHTML = optionsHtml;
+        }
+
+        function toggleCustomCategory() {
+            let select = document.getElementById("category");
+            let customDiv = document.getElementById("customCategoryDiv");
+            if (select.value === "custom") {
+                customDiv.style.display = "block";
+                document.getElementById("customCategoryName").focus();
+            } else {
+                customDiv.style.display = "none";
+            }
+        }
+
+        function getRandomHslColor() {
+            const hue = Math.floor(Math.random() * 360);
+            return { bg: `hsl(${hue}, 70%, 90%)`, color: `hsl(${hue}, 70%, 25%)` };
+        }
+
+        function getCategoryIcon(text) {
+            const emojiRegex = /([\uD800-\uDBFF][\uDC00-\uDFFF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F\uDE80-\uDEF6])/;
+            const match = text.match(emojiRegex);
+            if (match) return match[0];
+
+            const lowerText = text.toLowerCase();
+            const keywordMap = {
+                "food": "🍔", "grocery": "🛒", "groceries": "🛒", "coffee": "☕", "restaurant": "🍽️", "dining": "🍽️", "eat": "🍽️", "snack": "🥨", "pizza": "🍕", "bakery": "🥐", "beer": "🍺", "drink": "🍹",
+                "car": "🚗", "gas": "⛽", "fuel": "⛽", "uber": "🚕", "taxi": "🚕", "transit": "🚌", "bus": "🚌", "train": "🚆", "flight": "✈️", "travel": "✈️", "parking": "🅿️", "bike": "🚲", "toll": "🛣️",
+                "shop": "🛍️", "clothes": "👕", "shoe": "👟", "amazon": "📦", "gift": "🎁", "online": "💻", "electronics": "🔌",
+                "home": "🏠", "house": "🏠", "mortgage": "🏠", "rent": "🏠", "water": "💧", "electric": "⚡", "internet": "🌐", "wifi": "🌐", "phone": "📱", "mobile": "📱", "utility": "🔌", "repair": "🛠️",
+                "health": "🏥", "doctor": "👨‍⚕️", "dentist": "🦷", "medicine": "💊", "pharmacy": "💊", "gym": "🏋️‍♂️", "fitness": "🏋️‍♂️", "workout": "🏃",
+                "movie": "🎬", "cinema": "🍿", "game": "🎮", "music": "🎵", "party": "🎉", "fun": "🎈", "concert": "🎸", "hobby": "🎨",
+                "pet": "🐾", "dog": "🐶", "cat": "🐱", "vet": "🩺", "animal": "🐰",
+                "school": "🎓", "college": "🎓", "tuition": "🏫", "book": "📚", "course": "📖", "baby": "👶", "kid": "🧸", "child": "🧒", "toy": "🪁",
+                "bank": "🏦", "fee": "💳", "tax": "🧾", "insurance": "🛡️", "loan": "💸", "credit": "💳", "salary": "💰", "wage": "💵", "pay": "🤑", "freelance": "💻", "savings": "🐷"
+            };
+
+            for (let keyword in keywordMap) {
+                if (lowerText.includes(keyword)) return keywordMap[keyword];
+            }
+            return "🏷️";
+        }
+
+        function processRecurringEntries() {
+            let today = new Date();
+            let currentMonthStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
+            let addedNew = false;
+            
+            let uniqueTemplates = [];
+            entries.filter(e => e.recurring).forEach(template => {
+                let exists = uniqueTemplates.find(t => t.type === template.type && t.category === template.category && t.amount === template.amount);
+                if (!exists) uniqueTemplates.push(template);
+            });
+
+            uniqueTemplates.forEach(template => {
+                if (template.month < currentMonthStr) {
+                    let existsInCurrentMonth = entries.find(e => 
+                        e.month === currentMonthStr && 
+                        e.type === template.type && 
+                        e.category === template.category && 
+                        e.amount === template.amount
+                    );
+
+                    if (!existsInCurrentMonth) {
+                        entries.push({
+                            type: template.type,
+                            category: template.category,
+                            amount: template.amount,
+                            month: currentMonthStr,
+                            recurring: true,
+                            description: template.description
+                        });
+                        addedNew = true;
+                    }
+                }
+            });
+            if (addedNew) save();
+        }
+
+        function openAddModal() {
+            currentEditIndex = -1;
+            document.getElementById("modalTitle").innerText = "Add Entry";
+            document.getElementById("saveBtn").innerText = "Save Transaction";
+            
+            document.getElementById("type").value = "expense";
+            document.getElementById("category").selectedIndex = 0;
+            document.getElementById("customCategoryName").value = "";
+            document.getElementById("customCategoryDiv").style.display = "none";
+            document.getElementById("description").value = "";
+            document.getElementById("amount").value = "";
+            document.getElementById("month").valueAsDate = new Date();
+            document.getElementById("recurring").checked = false;
+
+            let modalEl = document.getElementById('addEntryModal');
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+
+        function editEntry(i) {
+            closeAllSwipes();
+            currentEditIndex = i; 
+            let e = entries[i];
+
+            document.getElementById("modalTitle").innerText = "Edit Entry";
+            document.getElementById("saveBtn").innerText = "Update Transaction";
+
+            document.getElementById("type").value = e.type;
+            
+            let catSelect = document.getElementById("category");
+            let optionsArray = Array.from(catSelect.options);
+            let catExists = optionsArray.some(opt => opt.value === e.category);
+
+            if (catExists) {
+                catSelect.value = e.category;
+                document.getElementById("customCategoryDiv").style.display = "none";
+            } else {
+                catSelect.value = "custom";
+                document.getElementById("customCategoryDiv").style.display = "block";
+                document.getElementById("customCategoryName").value = e.category;
+            }
+
+            document.getElementById("description").value = e.description || "";
+            document.getElementById("amount").value = e.amount;
+            document.getElementById("month").value = e.month;
+            document.getElementById("recurring").checked = e.recurring || false;
+
+            let modalEl = document.getElementById('addEntryModal');
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        }
+
+        function saveEntry() {
+            let type = document.getElementById("type").value;
+            let category = document.getElementById("category").value;
+            let amount = parseFloat(document.getElementById("amount").value);
+            let month = document.getElementById("month").value;
+            let description = document.getElementById("description").value.trim();
+            let recurring = document.getElementById("recurring").checked;
+
+            if (!amount || !month) {
+                alert("Please enter a valid amount and month.");
+                return;
+            }
+
+            if (category === "custom") {
+                let rawCustomName = document.getElementById("customCategoryName").value.trim();
+                if (!rawCustomName) {
+                    alert("Please enter a name for your custom category.");
+                    return;
+                }
+                
+                let icon = getCategoryIcon(rawCustomName);
+                let cleanName = rawCustomName.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F\uDE80-\uDEF6]/g, '').trim();
+                if(!cleanName) cleanName = "Custom"; 
+
+                let colors = getRandomHslColor();
+                categoryMap[cleanName] = { icon: icon, bg: colors.bg, color: colors.color };
+                category = cleanName; 
+                populateCategories(); 
+            }
+
+            if (currentEditIndex >= 0) {
+                entries[currentEditIndex] = { type, category, amount, month, description, recurring };
+            } else {
+                entries.push({ type, category, amount, month, description, recurring });
+            }
+
+            save();
+            render();
+
+            let modalEl = document.getElementById('addEntryModal');
+            bootstrap.Modal.getInstance(modalEl).hide();
+        }
+
+        function deleteEntry(i) {
+            if(confirm("Are you sure you want to delete this entry?")) {
+                entries.splice(i, 1);
+                save();
+                render();
+            }
+        }
+
+        function exportData() {
+            let exportObj = { entries: entries, categories: categoryMap };
+            let blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
+            let url = URL.createObjectURL(blob);
+            let a = document.createElement("a");
+            a.href = url;
+            a.download = "pocket_budget_backup.json";
+            a.click();
+        }
+
+        function importData(e) {
+            let file = e.target.files[0];
+            if (!file) return;
+            let reader = new FileReader();
+            reader.onload = function (ev) {
+                try {
+                    let importedData = JSON.parse(ev.target.result);
+                    if (Array.isArray(importedData)) {
+                        entries = importedData;
+                    } else {
+                        entries = importedData.entries || [];
+                        if (importedData.categories) {
+                            categoryMap = { ...defaultCategoryMap, ...importedData.categories };
+                        }
+                    }
+                    save();
+                    populateCategories();
+                    processRecurringEntries();
+                    render();
+                } catch(err) {
+                    alert("Invalid file format");
+                }
+            }
+            reader.readAsText(file);
+        }
+
+        // --- SWIPE LOGIC ENGINE ---
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let activeSwipeElement = null;
+
+        function closeAllSwipes() {
+            if (activeSwipeElement) {
+                let front = activeSwipeElement.querySelector('.swipe-front');
+                if(front) front.style.transform = 'translateX(0px)';
+                activeSwipeElement = null;
+            }
+        }
+
+        document.addEventListener('touchstart', function(e) {
+            if (activeSwipeElement && !activeSwipeElement.contains(e.target)) {
+                closeAllSwipes();
+            }
+        });
+
+        function handleTouchStart(e) {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            let container = e.currentTarget;
+            
+            if (activeSwipeElement && activeSwipeElement !== container) closeAllSwipes();
+        }
+
+        function handleTouchMove(e) {
+            if (!touchStartX) return;
+            let touchCurrentX = e.touches[0].clientX;
+            let touchCurrentY = e.touches[0].clientY;
+            
+            let diffX = touchStartX - touchCurrentX;
+            let diffY = Math.abs(touchStartY - touchCurrentY);
+            
+            if (diffY > Math.abs(diffX)) return; 
+            
+            let front = e.currentTarget.querySelector('.swipe-front');
+
+            if (diffX > 0 && diffX <= 120) {
+                front.style.transform = `translateX(-${diffX}px)`;
+                front.style.transition = 'none'; 
+            } else if (diffX < 0 && activeSwipeElement === e.currentTarget) {
+                let newPos = -100 - diffX;
+                if (newPos > -100 && newPos <= 0) {
+                    front.style.transform = `translateX(${newPos}px)`;
+                    front.style.transition = 'none';
+                }
+            }
+        }
+
+        function handleTouchEnd(e) {
+            if (!touchStartX) return;
+            let touchCurrentX = e.changedTouches[0].clientX;
+            let diffX = touchStartX - touchCurrentX;
+            let container = e.currentTarget;
+            let front = container.querySelector('.swipe-front');
+            
+            front.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
+
+            if (diffX > 40) {
+                front.style.transform = `translateX(-104px)`; 
+                activeSwipeElement = container;
+            } else {
+                front.style.transform = `translateX(0px)`;
+                if (activeSwipeElement === container) activeSwipeElement = null;
+            }
+            touchStartX = 0;
+            touchStartY = 0;
+        }
+
+        function render() {
+            let list = document.getElementById("transactionList");
+            list.innerHTML = "";
+            closeAllSwipes();
+
+            let income = entries.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0);
+            let expense = entries.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0);
+
+            if (entries.length === 0) {
+                list.innerHTML = `<div class="text-center text-muted p-4">No transactions yet. Click + to add one!</div>`;
+            } else {
+                [...entries].reverse().forEach((e, reversedIndex) => {
+                    let i = entries.length - 1 - reversedIndex;
+                    let isIncome = e.type === 'income';
+                    let amountClass = isIncome ? 'text-success' : 'text-danger';
+                    let sign = isIncome ? '+' : '-';
+                    
+                    let catInfo = categoryMap[e.category] || categoryMap["Other"] || { icon: "🏷️", bg: "#e2e3e5", color: "#41464b" };
+                    let recurringBadge = e.recurring ? `<i class="bi bi-repeat text-primary me-1" title="Recurring"></i>` : '';
+                    let descHtml = e.description ? `<div class="text-muted mb-1" style="font-size: 0.8rem; line-height: 1.2;">${e.description}</div>` : '';
+
+                    let item = `
+                    <div class="swipe-container" ontouchstart="handleTouchStart(event)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event)">
+                        
+                        <div class="swipe-actions">
+                            <button class="btn-swipe edit" onclick="editEntry(${i})"><i class="bi bi-pencil"></i></button>
+                            <button class="btn-swipe delete" onclick="deleteEntry(${i})"><i class="bi bi-trash"></i></button>
+                        </div>
+                        
+                        <div class="swipe-front">
+                            <div class="d-flex align-items-center flex-grow-1 overflow-hidden">
+                                <div class="icon-box" style="background-color: ${catInfo.bg}; color: ${catInfo.color};">
+                                    ${catInfo.icon}
+                                </div>
+                                <div class="text-truncate pe-2">
+                                    <h6 class="mb-0 fw-bold text-truncate">${e.category}</h6>
+                                    ${descHtml}
+                                    <small class="text-muted d-block" style="font-size: 0.75rem;">${recurringBadge} ${e.month}</small>
+                                </div>
+                            </div>
+                            <div class="text-end ms-2 flex-shrink-0">
+                                <h6 class="mb-0 fw-bold ${amountClass}">${sign}€${e.amount.toFixed(2)}</h6>
+                            </div>
+                        </div>
+
+                    </div>`;
+                    list.innerHTML += item;
+                });
+            }
+
+            updateSummary(income, expense);
+            updateCharts();
+            updateAnalytics(income, expense);
+        }
+
+        function updateSummary(income, expense) {
+            let balance = income - expense;
+            document.getElementById("incomeTotal").innerText = "€" + income.toFixed(2);
+            document.getElementById("expenseTotal").innerText = "€" + expense.toFixed(2);
+            document.getElementById("balanceTotal").innerText = "€" + balance.toFixed(2);
+        }
+
+        function updateCharts() {
+            let map = {};
+            entries.filter(e => e.type === 'expense').forEach(e => {
+                map[e.category] = (map[e.category] || 0) + e.amount;
+            });
+
+            let labels = Object.keys(map);
+            let values = Object.values(map);
+
+            if (expenseChart) expenseChart.destroy();
+            let ctxExp = document.getElementById("expenseChart");
+            if(values.length > 0) {
+                expenseChart = new Chart(ctxExp, {
+                    type: "doughnut",
+                    data: {
+                        labels: labels,
+                        datasets: [{ 
+                            data: values,
+                            backgroundColor: ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6']
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } } }
+                });
+            } else {
+                ctxExp.getContext("2d").clearRect(0, 0, ctxExp.width, ctxExp.height);
+            }
+
+            let incomeTotal = entries.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0);
+            let expenseTotal = entries.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0);
+
+            if (trendChart) trendChart.destroy();
+            trendChart = new Chart(document.getElementById("trendChart"), {
+                type: "bar",
+                data: {
+                    labels: ['Income', 'Expenses'],
+                    datasets: [{
+                        label: 'Amount (€)',
+                        data: [incomeTotal, expenseTotal],
+                        backgroundColor: ['#10B981', '#EF4444'],
+                        borderRadius: 6
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+            });
+        }
+
+        function updateAnalytics(income, expense) {
+            let analytics = document.getElementById("analytics");
+            analytics.innerHTML = "";
+
+            if (income === 0 && expense === 0) {
+                analytics.innerHTML = "<li>Add some entries to see insights!</li>";
+                return;
+            }
+
+            if (income > 0) {
+                let savings = ((income - expense) / income * 100).toFixed(1);
+                analytics.innerHTML += `<li><strong>Savings rate:</strong> ${savings}% of income saved.</li>`;
+            }
+
+            let catTotals = {};
+            entries.filter(e => e.type === 'expense').forEach(e => {
+                catTotals[e.category] = (catTotals[e.category] || 0) + e.amount;
+            });
+
+            let biggest = Object.entries(catTotals).sort((a, b) => b[1] - a[1])[0];
+            if (biggest) {
+                analytics.innerHTML += `<li><strong>Top expense:</strong> ${biggest[0]} (€${biggest[1].toFixed(2)}).</li>`;
+            }
+        }
+
+        // Initialize App
+        populateCategories();
+        processRecurringEntries(); 
+        render();
+
+    </script>
+</body>
+</html>
