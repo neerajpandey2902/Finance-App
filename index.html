@@ -21,13 +21,14 @@
             --bg-color: #f8f9fa;
         }
 
-        /* Fluid native app behavior */
         html, body {
             background-color: var(--bg-color);
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             padding-bottom: 80px;
             -webkit-font-smoothing: antialiased;
             overscroll-behavior-y: none; 
+            margin: 0;
+            height: 100%;
         }
 
         ::-webkit-scrollbar { display: none; }
@@ -45,7 +46,6 @@
             align-items: center;
         }
 
-        /* NEW: Dropdown Menu Styling */
         .dropdown-menu-custom {
             border-radius: 16px;
             border: none;
@@ -168,149 +168,184 @@
             .modal-dialog { margin: auto; position: absolute; bottom: 0; width: 100%; }
         }
         .chart-container { position: relative; height: 220px; width: 100%; }
+
+        /* Lock Screen Styling */
+        #lockScreen {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
     </style>
 </head>
 <body>
 
-    <div class="app-header">
-        <h5 class="mb-0 fw-bold"><i class="bi bi-wallet2 text-primary"></i> Pocket Budget</h5>
-        
-        <div class="dropdown">
-            <button class="btn btn-light border-0 shadow-sm rounded-circle d-flex align-items-center justify-content-center" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="width: 40px; height: 40px;">
-                <i class="bi bi-list fs-4 text-dark"></i>
-            </button>
+    <div id="lockScreen" style="display: none;">
+        <i class="bi bi-shield-lock-fill" style="font-size: 5rem; margin-bottom: 20px;"></i>
+        <h2 class="fw-bold mb-4">Pocket Budget</h2>
+        <p class="mb-4 text-white-50">App is locked for your privacy</p>
+        <button class="btn btn-light btn-lg rounded-pill px-4 fw-bold shadow-sm" onclick="unlockApp()">
+            <i class="bi bi-fingerprint fs-4 me-2 align-middle"></i> Unlock App
+        </button>
+    </div>
+
+    <div id="mainApp" style="display: none;">
+        <div class="app-header">
+            <h5 class="mb-0 fw-bold"><i class="bi bi-wallet2 text-primary"></i> Pocket Budget</h5>
             
-            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-custom mt-2">
-                <li>
-                    <a class="dropdown-item dropdown-item-custom fw-bold text-danger" href="debt.html">
-                        <i class="bi bi-bank fs-5 me-3"></i> Switch to Debt Tracker
-                    </a>
-                </li>
-                <li><hr class="dropdown-divider my-2 border-secondary border-opacity-10"></li>
-                <li>
-                    <a class="dropdown-item dropdown-item-custom fw-bold" href="#" onclick="exportData()">
-                        <i class="bi bi-download fs-5 me-3 text-primary"></i> Export Backup
-                    </a>
-                </li>
-                <li>
-                    <label class="dropdown-item dropdown-item-custom fw-bold mb-0" style="cursor: pointer;">
-                        <i class="bi bi-upload fs-5 me-3 text-success"></i> Import Backup
-                        <input type="file" hidden onchange="importData(event)">
-                    </label>
-                </li>
-            </ul>
-        </div>
-    </div>
+            <div class="d-flex align-items-center gap-2">
+                <button onclick="toggleFullScreen()" class="btn btn-light border-0 shadow-sm rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <i id="fsIcon" class="bi bi-arrows-fullscreen fs-5 text-primary"></i>
+                </button>
 
-    <div class="container py-4">
-        
-        <div class="card card-custom card-balance p-4 mb-3">
-            <h6 class="text-white-50 mb-1">Total Balance</h6>
-            <h2 id="balanceTotal" class="fw-bold mb-0">€0.00</h2>
-        </div>
-
-        <div class="row g-3 mb-4">
-            <div class="col-6">
-                <div class="card card-custom card-income p-3 h-100">
-                    <small class="text-uppercase fw-bold opacity-75 d-block mb-1"><i class="bi bi-arrow-down-left-circle"></i> Income</small>
-                    <h5 id="incomeTotal" class="fw-bold mb-0">€0.00</h5>
-                </div>
-            </div>
-            <div class="col-6">
-                <div class="card card-custom card-expense p-3 h-100">
-                    <small class="text-uppercase fw-bold opacity-75 d-block mb-1"><i class="bi bi-arrow-up-right-circle"></i> Expenses</small>
-                    <h5 id="expenseTotal" class="fw-bold mb-0">€0.00</h5>
+                <div class="dropdown">
+                    <button class="btn btn-light border-0 shadow-sm rounded-circle d-flex align-items-center justify-content-center" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="width: 40px; height: 40px;">
+                        <i class="bi bi-list fs-4 text-dark"></i>
+                    </button>
+                    
+                    <ul class="dropdown-menu dropdown-menu-end dropdown-menu-custom mt-2">
+                        <li>
+                            <a class="dropdown-item dropdown-item-custom fw-bold text-danger" href="debt.html">
+                                <i class="bi bi-bank fs-5 me-3"></i> Switch to Debt Tracker
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider my-2 border-secondary border-opacity-10"></li>
+                        <li>
+                            <a class="dropdown-item dropdown-item-custom fw-bold" href="#" onclick="toggleAppLock()">
+                                <i id="lockMenuIcon" class="bi bi-shield-lock fs-5 me-3 text-warning"></i> 
+                                <span id="lockMenuText">Enable App Lock</span>
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider my-2 border-secondary border-opacity-10"></li>
+                        <li>
+                            <a class="dropdown-item dropdown-item-custom fw-bold" href="#" onclick="exportData()">
+                                <i class="bi bi-download fs-5 me-3 text-primary"></i> Export Backup
+                            </a>
+                        </li>
+                        <li>
+                            <label class="dropdown-item dropdown-item-custom fw-bold mb-0" style="cursor: pointer;">
+                                <i class="bi bi-upload fs-5 me-3 text-success"></i> Import Backup
+                                <input type="file" hidden onchange="importData(event)">
+                            </label>
+                        </li>
+                    </ul>
                 </div>
             </div>
         </div>
 
-        <h6 class="fw-bold mb-3 text-secondary">Analytics</h6>
-        <div class="row g-3 mb-4">
-            <div class="col-12 col-md-6">
-                <div class="card card-custom p-3">
-                    <h6 class="text-center text-muted mb-3 fs-6">Expense Distribution</h6>
-                    <div class="chart-container"><canvas id="expenseChart"></canvas></div>
+        <div class="container py-4">
+            
+            <div class="card card-custom card-balance p-4 mb-3">
+                <h6 class="text-white-50 mb-1">Balance Left</h6> <h2 id="balanceTotal" class="fw-bold mb-0">€0.00</h2>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-6">
+                    <div class="card card-custom card-income p-3 h-100">
+                        <small class="text-uppercase fw-bold opacity-75 d-block mb-1"><i class="bi bi-arrow-down-left-circle"></i> Income</small>
+                        <h5 id="incomeTotal" class="fw-bold mb-0">€0.00</h5>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="card card-custom card-expense p-3 h-100">
+                        <small class="text-uppercase fw-bold opacity-75 d-block mb-1"><i class="bi bi-arrow-up-right-circle"></i> Expenses</small>
+                        <h5 id="expenseTotal" class="fw-bold mb-0">€0.00</h5>
+                    </div>
                 </div>
             </div>
-            <div class="col-12 col-md-6">
-                <div class="card card-custom p-3">
-                    <h6 class="text-center text-muted mb-3 fs-6">Income vs Expenses</h6>
-                    <div class="chart-container"><canvas id="trendChart"></canvas></div>
+
+            <h6 class="fw-bold mb-3 text-secondary">Analytics</h6>
+            <div class="row g-3 mb-4">
+                <div class="col-12 col-md-6">
+                    <div class="card card-custom p-3">
+                        <h6 class="text-center text-muted mb-3 fs-6">Expense Distribution</h6>
+                        <div class="chart-container"><canvas id="expenseChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="card card-custom p-3">
+                        <h6 class="text-center text-muted mb-3 fs-6">Income vs Expenses</h6>
+                        <div class="chart-container"><canvas id="trendChart"></canvas></div>
+                    </div>
                 </div>
             </div>
+            
+            <div class="card card-custom p-3 mb-4 bg-white border border-info border-opacity-25">
+                <h6 class="text-info fw-bold mb-2"><i class="bi bi-lightbulb"></i> Insights</h6>
+                <ul id="analytics" class="mb-0 ps-3 text-muted small">
+                    <li>Add some entries to see insights!</li>
+                </ul>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0 text-secondary">Recent Transactions</h6>
+                <small class="text-muted" style="font-size: 0.7rem;"><i class="bi bi-arrows-collapse"></i> Swipe left to edit</small>
+            </div>
+            
+            <div id="transactionList"></div>
+
         </div>
-        
-        <div class="card card-custom p-3 mb-4 bg-white border border-info border-opacity-25">
-            <h6 class="text-info fw-bold mb-2"><i class="bi bi-lightbulb"></i> Insights</h6>
-            <ul id="analytics" class="mb-0 ps-3 text-muted small">
-                <li>Add some entries to see insights!</li>
-            </ul>
-        </div>
 
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h6 class="fw-bold mb-0 text-secondary">Recent Transactions</h6>
-            <small class="text-muted" style="font-size: 0.7rem;"><i class="bi bi-arrows-collapse"></i> Swipe left to edit</small>
-        </div>
-        
-        <div id="transactionList"></div>
+        <button class="fab" onclick="openAddModal()">
+            <i class="bi bi-plus"></i>
+        </button>
 
-    </div>
-
-    <button class="fab" onclick="openAddModal()">
-        <i class="bi bi-plus"></i>
-    </button>
-
-    <div class="modal fade" id="addEntryModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content p-2">
-                <div class="modal-header border-0">
-                    <h5 class="modal-title fw-bold" id="modalTitle">Add Entry</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-12">
-                            <label class="form-label text-muted small">Transaction Type</label>
-                            <select id="type" class="form-select form-select-lg">
-                                <option value="income">Income</option>
-                                <option value="expense" selected>Expense</option>
-                            </select>
-                        </div>
-                        
-                        <div class="col-12">
-                            <label class="form-label text-muted small">Category</label>
-                            <select id="category" class="form-select form-select-lg" onchange="toggleCustomCategory()">
+        <div class="modal fade" id="addEntryModal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content p-2">
+                    <div class="modal-header border-0">
+                        <h5 class="modal-title fw-bold" id="modalTitle">Add Entry</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label text-muted small">Transaction Type</label>
+                                <select id="type" class="form-select form-select-lg">
+                                    <option value="income">Income</option>
+                                    <option value="expense" selected>Expense</option>
                                 </select>
-                        </div>
-
-                        <div class="col-12" id="customCategoryDiv" style="display: none;">
-                            <label class="form-label text-muted small">New Category Name (e.g., Gym, Pets, Coffee)</label>
-                            <input id="customCategoryName" type="text" class="form-control form-control-lg" placeholder="Type a category...">
-                        </div>
-
-                        <div class="col-12">
-                            <label class="form-label text-muted small">Description / Note (Optional)</label>
-                            <input id="description" type="text" class="form-control form-control-lg" placeholder="e.g. Groceries at Aldi">
-                        </div>
-
-                        <div class="col-6">
-                            <label class="form-label text-muted small">Amount (€)</label>
-                            <input id="amount" type="number" step="0.01" class="form-control form-control-lg" placeholder="0.00">
-                        </div>
-                        <div class="col-6">
-                            <label class="form-label text-muted small">Month</label>
-                            <input id="month" type="month" class="form-control form-control-lg">
-                        </div>
-                        
-                        <div class="col-12 mt-3">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="recurring">
-                                <label class="form-check-label text-muted" for="recurring">Make this a recurring monthly transaction</label>
                             </div>
-                        </div>
+                            
+                            <div class="col-12">
+                                <label class="form-label text-muted small">Category</label>
+                                <select id="category" class="form-select form-select-lg" onchange="toggleCustomCategory()"></select>
+                            </div>
 
-                        <div class="col-12 mt-4">
-                            <button id="saveBtn" onclick="saveEntry()" class="btn btn-primary btn-lg w-100 rounded-pill">Save Transaction</button>
+                            <div class="col-12" id="customCategoryDiv" style="display: none;">
+                                <label class="form-label text-muted small">New Category Name (e.g., Gym, Pets, Coffee)</label>
+                                <input id="customCategoryName" type="text" class="form-control form-control-lg" placeholder="Type a category...">
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label text-muted small">Description / Note (Optional)</label>
+                                <input id="description" type="text" class="form-control form-control-lg" placeholder="e.g. Groceries at Aldi">
+                            </div>
+
+                            <div class="col-6">
+                                <label class="form-label text-muted small">Amount (€)</label>
+                                <input id="amount" type="number" step="0.01" class="form-control form-control-lg" placeholder="0.00">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label text-muted small">Month</label>
+                                <input id="month" type="month" class="form-control form-control-lg">
+                            </div>
+                            
+                            <div class="col-12 mt-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="recurring">
+                                    <label class="form-check-label text-muted" for="recurring">Make this a recurring monthly transaction</label>
+                                </div>
+                            </div>
+
+                            <div class="col-12 mt-4">
+                                <button id="saveBtn" onclick="saveEntry()" class="btn btn-primary btn-lg w-100 rounded-pill">Save Transaction</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -327,6 +362,124 @@
     </script>
 
     <script>
+        // --- NATIVE DEVICE AUTHENTICATION LOGIC ---
+        let isAppLocked = localStorage.getItem("appLockEnabled") === "true";
+
+        // Helpers to convert data to save locally
+        function arrayBufferToBase64(buffer) {
+            let binary = '';
+            let bytes = new Uint8Array(buffer);
+            for (let i = 0; i < bytes.byteLength; i++) { binary += String.fromCharCode(bytes[i]); }
+            return window.btoa(binary);
+        }
+
+        function base64ToArrayBuffer(base64) {
+            let binary_string = window.atob(base64);
+            let len = binary_string.length;
+            let bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) { bytes[i] = binary_string.charCodeAt(i); }
+            return bytes.buffer;
+        }
+
+        function updateLockMenuText() {
+            let textEl = document.getElementById("lockMenuText");
+            let iconEl = document.getElementById("lockMenuIcon");
+            if (isAppLocked) {
+                textEl.innerText = "Disable App Lock";
+                iconEl.className = "bi bi-unlock fs-5 me-3 text-warning";
+            } else {
+                textEl.innerText = "Enable App Lock";
+                iconEl.className = "bi bi-shield-lock fs-5 me-3 text-warning";
+            }
+        }
+
+        async function toggleAppLock() {
+            if (!window.PublicKeyCredential) {
+                alert("Your device or browser does not support biometric authentication via web.");
+                return;
+            }
+
+            if (isAppLocked) {
+                // Disable Lock
+                localStorage.removeItem("appLockEnabled");
+                localStorage.removeItem("appLockCredId");
+                isAppLocked = false;
+                alert("App Lock successfully disabled.");
+                updateLockMenuText();
+            } else {
+                // Enable Lock
+                try {
+                    const challenge = new Uint8Array(32);
+                    window.crypto.getRandomValues(challenge);
+                    const userId = new Uint8Array(16);
+                    window.crypto.getRandomValues(userId);
+
+                    const createOptions = {
+                        challenge: challenge,
+                        rp: { name: "Pocket Budget", id: window.location.hostname },
+                        user: { id: userId, name: "owner", displayName: "App Owner" },
+                        pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
+                        authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+                        timeout: 60000
+                    };
+
+                    const credential = await navigator.credentials.create({ publicKey: createOptions });
+                    
+                    localStorage.setItem("appLockCredId", arrayBufferToBase64(credential.rawId));
+                    localStorage.setItem("appLockEnabled", "true");
+                    isAppLocked = true;
+                    
+                    alert("App Lock enabled! Next time you open the app, it will ask for your fingerprint or face.");
+                    updateLockMenuText();
+                } catch (err) {
+                    console.error(err);
+                    alert("Failed to setup lock. Make sure your device has a screen lock configured.");
+                }
+            }
+        }
+
+        async function unlockApp() {
+            try {
+                const challenge = new Uint8Array(32);
+                window.crypto.getRandomValues(challenge);
+                
+                const credIdBase64 = localStorage.getItem("appLockCredId");
+                const credIdBuffer = base64ToArrayBuffer(credIdBase64);
+
+                const requestOptions = {
+                    challenge: challenge,
+                    allowCredentials: [{ id: credIdBuffer, type: "public-key", transports: ["internal"] }],
+                    userVerification: "required",
+                    timeout: 60000
+                };
+
+                // Triggers native Android/iOS biometric prompt
+                await navigator.credentials.get({ publicKey: requestOptions });
+
+                // Success
+                document.getElementById("lockScreen").style.display = "none";
+                document.getElementById("mainApp").style.display = "block";
+            } catch (err) {
+                console.error("Unlock failed", err);
+                // Just leaves them on the lock screen so they can tap the button to try again
+            }
+        }
+
+        // Initialize Authentication on Startup
+        function initAppSecurity() {
+            updateLockMenuText();
+            if (isAppLocked) {
+                document.getElementById("mainApp").style.display = "none";
+                document.getElementById("lockScreen").style.display = "flex";
+                unlockApp(); // Automatically prompt on load
+            } else {
+                document.getElementById("mainApp").style.display = "block";
+                document.getElementById("lockScreen").style.display = "none";
+            }
+        }
+
+
+        // --- MAIN APP LOGIC ---
         let entries = JSON.parse(localStorage.getItem("financeData")) || [];
         let expenseChart;
         let trendChart;
@@ -350,6 +503,25 @@
 
         document.getElementById('month').valueAsDate = new Date();
 
+        function toggleFullScreen() {
+            let doc = window.document;
+            let docEl = doc.documentElement;
+            let fsIcon = document.getElementById("fsIcon");
+
+            let requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+            let cancelFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
+
+            if(!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
+                requestFullScreen.call(docEl);
+                fsIcon.classList.remove("bi-arrows-fullscreen");
+                fsIcon.classList.add("bi-fullscreen-exit");
+            } else {
+                cancelFullScreen.call(doc);
+                fsIcon.classList.remove("bi-fullscreen-exit");
+                fsIcon.classList.add("bi-arrows-fullscreen");
+            }
+        }
+
         function save() {
             localStorage.setItem("financeData", JSON.stringify(entries));
             localStorage.setItem("financeCategoryMap", JSON.stringify(categoryMap));
@@ -358,12 +530,10 @@
         function populateCategories() {
             let select = document.getElementById("category");
             let optionsHtml = "";
-            
             Object.keys(categoryMap).forEach(cat => {
                 let icon = categoryMap[cat].icon;
                 optionsHtml += `<option value="${cat}">${icon} ${cat}</option>`;
             });
-
             optionsHtml += `<option value="custom" class="fw-bold text-primary">➕ Add Custom Category...</option>`;
             select.innerHTML = optionsHtml;
         }
@@ -604,7 +774,6 @@
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
             let container = e.currentTarget;
-            
             if (activeSwipeElement && activeSwipeElement !== container) closeAllSwipes();
         }
 
@@ -785,7 +954,8 @@
             }
         }
 
-        // Initialize App
+        // INIT SCRIPT: Auth First, Data Second.
+        initAppSecurity();
         populateCategories();
         processRecurringEntries(); 
         render();
