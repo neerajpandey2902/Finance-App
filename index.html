@@ -279,7 +279,10 @@
     <script type="module">
         // 1. Import Firebase REALTIME DATABASE Modules
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        
+        // --- CHANGED THIS LINE: Now imports signInWithRedirect instead of signInWithPopup ---
+        import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        
         import { getDatabase, ref, onValue, push, set, update, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
         // 2. Initialize Firebase
@@ -295,7 +298,7 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getDatabase(app); // Note: Using Realtime DB instead of Firestore
+        const db = getDatabase(app); 
 
         // --- GLOBAL VARIABLES ---
         let currentUser = null;
@@ -339,10 +342,8 @@
             }
         });
 
-        // --- CLOUD DATABASE LISTENER (Realtime Database Version) ---
         let unsubscribeDb = null;
         function listenToCloudData() {
-            // Point to this specific user's folder in the Realtime Database
             const userTransactionsRef = ref(db, 'transactions/' + currentUser.uid);
             
             unsubscribeDb = onValue(userTransactionsRef, (snapshot) => {
@@ -351,7 +352,6 @@
                     entries.push({ db_id: childSnapshot.key, ...childSnapshot.val() });
                 });
                 
-                // Sort chronologically
                 entries.sort((a, b) => {
                     let timeA = a.createdAt || 0;
                     let timeB = b.createdAt || 0;
@@ -364,9 +364,11 @@
         }
 
         // --- EXPORT GLOBALS FOR HTML ONCLICK BUTTONS ---
+        
+        // --- CHANGED THIS LOGIC: Now uses signInWithRedirect! ---
         window.signInWithGoogle = () => {
             const provider = new GoogleAuthProvider();
-            signInWithPopup(auth, provider).catch(error => alert("Login Failed: " + error.message));
+            signInWithRedirect(auth, provider).catch(error => alert("Login Failed: " + error.message));
         };
 
         window.signOutUser = () => {
@@ -516,11 +518,9 @@
 
             try {
                 if (editId) {
-                    // Update in Realtime Database
                     const updateRef = ref(db, 'transactions/' + currentUser.uid + '/' + editId);
                     await update(updateRef, payload);
                 } else {
-                    // Push new entry to Realtime Database
                     payload.createdAt = serverTimestamp();
                     const newRef = push(ref(db, 'transactions/' + currentUser.uid));
                     await set(newRef, payload);
