@@ -72,13 +72,11 @@
 
         /* Cloud Login Screen */
         #loginScreen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-color); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
-        .google-btn { background-color: #fff; color: #757575; font-weight: bold; border-radius: 24px; border: none; padding: 12px 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 12px; font-size: 1.1rem; transition: transform 0.2s; }
-        .google-btn:active { transform: scale(0.95); }
     </style>
 </head>
 <body>
 
-    <div id="loginScreen">
+    <div id="loginScreen" style="display: none;">
         <div class="text-center mb-4">
             <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); border-radius: 24px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto; box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);">
                 <i class="bi bi-cloud-check-fill text-white" style="font-size: 40px;"></i>
@@ -280,12 +278,9 @@
     </div>
 
     <script type="module">
-        // 1. Import Firebase REALTIME DATABASE Modules
+        // 1. IMPORT REALTIME DATABASE & EMAIL AUTH
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        
-        // --- CHANGED THIS LINE: Now imports signInWithRedirect instead of signInWithPopup ---
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        
         import { getDatabase, ref, onValue, push, set, update, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
         // 2. Initialize Firebase
@@ -302,15 +297,6 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getDatabase(app); 
-
-// DIAGNOSTIC TOOL: Catch silent redirect errors
-getRedirectResult(auth).then((result) => {
-    if (result !== null) {
-        console.log("Login successful via redirect!");
-    }
-}).catch((error) => {
-    alert("HIDDEN ERROR CAUGHT: " + error.code + " - " + error.message);
-});
 
         // --- GLOBAL VARIABLES ---
         let currentUser = null;
@@ -330,19 +316,16 @@ getRedirectResult(auth).then((result) => {
             "Utilities": { icon: "💡", bg: "#ffdac1", color: "#854a00" }, "Other": { icon: "📦", bg: "#e2e3e5", color: "#41464b" }
         };
 
-        // --- AUTHENTICATION STATE OBSERVER ---
+        // --- AUTHENTICATION OBSERVER ---
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
                 document.getElementById('loginScreen').style.display = 'none';
                 document.getElementById('mainApp').style.display = 'block';
                 
-                document.getElementById('headerProfileName').innerText = user.displayName.split(' ')[0] + "'s Budget";
-                if(user.photoURL) {
-                    let avatar = document.getElementById('headerAvatar');
-                    avatar.src = user.photoURL;
-                    avatar.style.display = 'block';
-                }
+                // Use email prefix for profile name
+                let profileName = user.email.split('@')[0];
+                document.getElementById('headerProfileName').innerText = profileName + "'s Budget";
 
                 listenToCloudData();
                 populateCategories();
@@ -375,9 +358,7 @@ getRedirectResult(auth).then((result) => {
             });
         }
 
-        // --- EXPORT GLOBALS FOR HTML ONCLICK BUTTONS ---
-        
-        // --- CHANGED THIS LOGIC: Now uses signInWithRedirect! ---
+        // --- BUTTON LOGIC ---
         window.loginWithEmail = () => {
             let email = document.getElementById('emailInput').value.trim();
             let pass = document.getElementById('passwordInput').value.trim();
@@ -385,6 +366,7 @@ getRedirectResult(auth).then((result) => {
             
             document.getElementById('loginBtn').innerText = "Logging in...";
             signInWithEmailAndPassword(auth, email, pass)
+                .then(() => { document.getElementById('loginBtn').innerText = "Log In"; })
                 .catch(error => {
                     alert("Login Failed: " + error.message);
                     document.getElementById('loginBtn').innerText = "Log In";
@@ -399,6 +381,7 @@ getRedirectResult(auth).then((result) => {
             
             document.getElementById('signupBtn').innerText = "Creating...";
             createUserWithEmailAndPassword(auth, email, pass)
+                .then(() => { document.getElementById('signupBtn').innerText = "Create Account"; })
                 .catch(error => {
                     alert("Sign Up Failed: " + error.message);
                     document.getElementById('signupBtn').innerText = "Create Account";
