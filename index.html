@@ -367,9 +367,10 @@
         
         // --- CHANGED THIS LOGIC: Now uses signInWithRedirect! ---
         window.signInWithGoogle = () => {
-            const provider = new GoogleAuthProvider();
-            signInWithRedirect(auth, provider).catch(error => alert("Login Failed: " + error.message));
-        };
+    const provider = new GoogleAuthProvider();
+    // This tells the browser to navigate away to Google, no popups allowed!
+    signInWithRedirect(auth, provider);
+};
 
         window.signOutUser = () => {
             if(unsubscribeDb) unsubscribeDb(); // Stop listening
