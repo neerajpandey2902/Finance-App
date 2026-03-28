@@ -281,7 +281,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         
         // --- CHANGED THIS LINE: Now imports signInWithRedirect instead of signInWithPopup ---
-        import { getAuth, signInWithRedirect, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getAuth, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
         
         import { getDatabase, ref, onValue, push, set, update, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
@@ -299,6 +299,15 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getDatabase(app); 
+
+// DIAGNOSTIC TOOL: Catch silent redirect errors
+getRedirectResult(auth).then((result) => {
+    if (result !== null) {
+        console.log("Login successful via redirect!");
+    }
+}).catch((error) => {
+    alert("HIDDEN ERROR CAUGHT: " + error.code + " - " + error.message);
+});
 
         // --- GLOBAL VARIABLES ---
         let currentUser = null;
