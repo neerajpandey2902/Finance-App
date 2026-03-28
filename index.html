@@ -9,8 +9,6 @@
     <title>Pocket Budget</title>
 
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon-192.png">
-    <link rel="icon" type="image/png" href="icon-192.png">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
@@ -21,12 +19,13 @@
         :root {
             --primary-color: #4F46E5;
             --bg-color: #f8f9fa;
+            --nav-height: 65px;
         }
 
         html, body {
             background-color: var(--bg-color);
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            padding-bottom: 80px;
+            padding-bottom: calc(var(--nav-height) + 20px);
             -webkit-font-smoothing: antialiased;
             overscroll-behavior-y: none; 
             margin: 0;
@@ -48,141 +47,83 @@
             align-items: center;
         }
 
-        .dropdown-menu-custom {
-            border-radius: 16px;
-            border: none;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            padding: 8px;
-            min-width: 220px;
-        }
-        
-        .dropdown-item-custom {
-            border-radius: 10px;
-            padding: 10px 16px;
-            transition: background-color 0.2s;
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: var(--nav-height);
+            background: #fff;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.05);
             display: flex;
+            justify-content: space-around;
             align-items: center;
-            font-size: 0.95rem;
-            color: #4b5563;
+            z-index: 1040;
+            padding-bottom: env(safe-area-inset-bottom);
         }
 
-        .dropdown-item-custom:hover, .dropdown-item-custom:active {
-            background-color: #f3f4f6;
+        .nav-item {
+            text-align: center;
+            color: #9ca3af;
+            font-size: 0.70rem;
+            text-decoration: none;
+            flex-grow: 1;
+            padding: 8px 0;
+            cursor: pointer;
+            transition: color 0.2s;
         }
 
-        .card-custom {
-            border: none;
-            border-radius: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+        .nav-item i { font-size: 1.3rem; display: block; margin-bottom: 2px; }
+        .nav-item.active { color: var(--primary-color); font-weight: bold; }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
+        .dropdown-menu-custom { border-radius: 16px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); padding: 8px; min-width: 220px; }
+        .dropdown-item-custom { border-radius: 10px; padding: 10px 16px; transition: background-color 0.2s; display: flex; align-items: center; font-size: 0.95rem; color: #4b5563; }
+        .dropdown-item-custom:hover, .dropdown-item-custom:active { background-color: #f3f4f6; }
+
+        .card-custom { border: none; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.04); }
         .card-balance { background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); color: white; }
         .card-income { background: #e8f7ec; color: #146c43; }
         .card-expense { background: #fdeaea; color: #b02a37; }
 
-        .swipe-container {
-            position: relative;
-            border-radius: 16px;
-            margin-bottom: 12px;
+        /* MODIFIED SWIPE STYLES: Added touch-action and user-select for desktop dragging */
+        .swipe-container { 
+            position: relative; 
+            border-radius: 16px; 
+            margin-bottom: 12px; 
             background: #f8d7da; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02); 
+            overflow: hidden; 
+            touch-action: pan-y; 
+            user-select: none; 
+            -webkit-user-select: none; 
         }
-
-        .swipe-actions {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            right: 0;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            padding-right: 12px;
-            gap: 8px;
-            width: 100%;
-            z-index: 1;
-        }
-
-        .btn-swipe {
-            width: 42px;
-            height: 42px;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: none;
-            color: white;
-            font-size: 1.2rem;
-            transition: transform 0.1s;
-        }
+        
+        .swipe-actions { position: absolute; top: 0; bottom: 0; right: 0; display: flex; align-items: center; justify-content: flex-end; padding-right: 12px; gap: 8px; width: 100%; z-index: 1; }
+        .btn-swipe { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; border: none; color: white; font-size: 1.2rem; transition: transform 0.1s; }
         .btn-swipe:active { transform: scale(0.9); }
         .btn-swipe.edit { background-color: var(--primary-color); }
         .btn-swipe.delete { background-color: #dc3545; }
 
-        .swipe-front {
-            position: relative;
-            background: #fff;
-            padding: 16px;
-            border-radius: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            z-index: 2;
-            will-change: transform;
-            transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
-        }
+        .swipe-front { position: relative; background: #fff; padding: 16px; border-radius: 16px; display: flex; align-items: center; justify-content: space-between; z-index: 2; will-change: transform; transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        
+        .icon-box { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-right: 16px; flex-shrink: 0; }
 
-        .icon-box {
-            width: 48px;
-            height: 48px;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            margin-right: 16px;
-            flex-shrink: 0;
-        }
-
-        .fab {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            width: 60px;
-            height: 60px;
-            border-radius: 30px;
-            background: var(--primary-color);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
-            border: none;
-            z-index: 1050;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
+        .fab { position: fixed; bottom: calc(var(--nav-height) + 16px); right: 24px; width: 60px; height: 60px; border-radius: 30px; background: var(--primary-color); color: white; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4); border: none; z-index: 1030; cursor: pointer; transition: transform 0.2s; }
         .fab:active { transform: scale(0.95); }
 
         .modal-content { border-radius: 24px 24px 0 0; border: none; }
-        @media (max-width: 576px) {
-            .modal-dialog { margin: auto; position: absolute; bottom: 0; width: 100%; }
-        }
+        @media (max-width: 576px) { .modal-dialog { margin: auto; position: absolute; bottom: 0; width: 100%; } }
         .chart-container { position: relative; height: 220px; width: 100%; }
 
-        /* Lock Screen Styling */
-        #lockScreen {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: white;
-        }
+        #lockScreen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; }
     </style>
 </head>
 <body>
@@ -242,55 +183,96 @@
 
         <div class="container py-4">
             
-            <div class="card card-custom card-balance p-4 mb-3">
-                <h6 class="text-white-50 mb-1">Balance Left</h6> <h2 id="balanceTotal" class="fw-bold mb-0">€0.00</h2>
-            </div>
+            <div id="tab-dashboard" class="tab-content active">
+                <div class="card card-custom card-balance p-4 mb-3">
+                    <h6 class="text-white-50 mb-1">Balance Left</h6>
+                    <h2 id="balanceTotal" class="fw-bold mb-0">€0.00</h2>
+                </div>
 
-            <div class="row g-3 mb-4">
-                <div class="col-6">
-                    <div class="card card-custom card-income p-3 h-100">
-                        <small class="text-uppercase fw-bold opacity-75 d-block mb-1"><i class="bi bi-arrow-down-left-circle"></i> Income</small>
-                        <h5 id="incomeTotal" class="fw-bold mb-0">€0.00</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-6">
+                        <div class="card card-custom card-income p-3 h-100">
+                            <small class="text-uppercase fw-bold opacity-75 d-block mb-1"><i class="bi bi-arrow-down-left-circle"></i> Income</small>
+                            <h5 id="incomeTotal" class="fw-bold mb-0">€0.00</h5>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="card card-custom card-expense p-3 h-100">
+                            <small class="text-uppercase fw-bold opacity-75 d-block mb-1"><i class="bi bi-arrow-up-right-circle"></i> Expenses</small>
+                            <h5 id="expenseTotal" class="fw-bold mb-0">€0.00</h5>
+                        </div>
                     </div>
                 </div>
-                <div class="col-6">
-                    <div class="card card-custom card-expense p-3 h-100">
-                        <small class="text-uppercase fw-bold opacity-75 d-block mb-1"><i class="bi bi-arrow-up-right-circle"></i> Expenses</small>
-                        <h5 id="expenseTotal" class="fw-bold mb-0">€0.00</h5>
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold mb-0 text-secondary">Recent Transactions</h6>
+                    <small class="text-muted" style="font-size: 0.7rem;"><i class="bi bi-arrows-collapse"></i> Swipe left to edit</small>
+                </div>
+                
+                <div id="dashboardList"></div>
+            </div>
+
+            <div id="tab-history" class="tab-content">
+                <h6 class="fw-bold mb-3 text-secondary">Monthly History</h6>
+                <div class="card card-custom p-3 mb-4 bg-white border border-primary border-opacity-25">
+                    <label class="form-label text-muted small mb-1 fw-bold"><i class="bi bi-calendar-month text-primary"></i> Select Month to Filter</label>
+                    <input type="month" id="historyMonth" class="form-control form-control-lg text-primary fw-bold" style="background-color: #e0e7ff; border:none;" onchange="renderAll()">
+                </div>
+
+                <div class="d-flex justify-content-between mb-2 px-1">
+                    <small class="text-muted fw-bold">Transactions for Month</small>
+                    <small id="historyMonthTotal" class="text-danger fw-bold">€0.00 Spent</small>
+                </div>
+                <div id="historyList"></div>
+            </div>
+
+            <div id="tab-analytics" class="tab-content">
+                <h6 class="fw-bold mb-3 text-secondary">Advanced Analytics</h6>
+                
+                <div class="card card-custom p-3 mb-4">
+                    <h6 class="text-center text-muted mb-1 fs-6"><i class="bi bi-graph-up text-primary"></i> Monthly Expense Trend</h6>
+                    <small class="text-center text-muted d-block mb-3" style="font-size: 0.7rem;">Your spending history over time</small>
+                    <div class="chart-container"><canvas id="trendLineChart"></canvas></div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-12">
+                        <div class="card card-custom p-3">
+                            <h6 class="text-center text-muted mb-3 fs-6">Fixed vs Variable vs Debt</h6>
+                            <div class="chart-container"><canvas id="bucketChart"></canvas></div>
+                        </div>
                     </div>
+                    <div class="col-12">
+                        <div class="card card-custom p-3">
+                            <h6 class="text-center text-muted mb-3 fs-6">Detailed Category Breakdown</h6>
+                            <div class="chart-container"><canvas id="expenseChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card card-custom p-3 mb-4 bg-white border border-info border-opacity-25">
+                    <h6 class="text-info fw-bold mb-2"><i class="bi bi-lightbulb"></i> Insights</h6>
+                    <ul id="analyticsText" class="mb-0 ps-3 text-muted small">
+                        <li>Add some entries to see insights!</li>
+                    </ul>
                 </div>
             </div>
 
-            <h6 class="fw-bold mb-3 text-secondary">Analytics</h6>
-            <div class="row g-3 mb-4">
-                <div class="col-12 col-md-6">
-                    <div class="card card-custom p-3">
-                        <h6 class="text-center text-muted mb-3 fs-6">Expense Distribution</h6>
-                        <div class="chart-container"><canvas id="expenseChart"></canvas></div>
-                    </div>
-                </div>
-                <div class="col-12 col-md-6">
-                    <div class="card card-custom p-3">
-                        <h6 class="text-center text-muted mb-3 fs-6">Income vs Expenses</h6>
-                        <div class="chart-container"><canvas id="trendChart"></canvas></div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="card card-custom p-3 mb-4 bg-white border border-info border-opacity-25">
-                <h6 class="text-info fw-bold mb-2"><i class="bi bi-lightbulb"></i> Insights</h6>
-                <ul id="analytics" class="mb-0 ps-3 text-muted small">
-                    <li>Add some entries to see insights!</li>
-                </ul>
-            </div>
+        </div>
 
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="fw-bold mb-0 text-secondary">Recent Transactions</h6>
-                <small class="text-muted" style="font-size: 0.7rem;"><i class="bi bi-arrows-collapse"></i> Swipe left to edit</small>
+        <div class="bottom-nav">
+            <div class="nav-item active" onclick="switchTab('dashboard', this)">
+                <i class="bi bi-grid-fill"></i>
+                Dashboard
             </div>
-            
-            <div id="transactionList"></div>
-
+            <div class="nav-item" onclick="switchTab('history', this)">
+                <i class="bi bi-clock-history"></i>
+                History
+            </div>
+            <div class="nav-item" onclick="switchTab('analytics', this)">
+                <i class="bi bi-pie-chart-fill"></i>
+                Analytics
+            </div>
         </div>
 
         <button class="fab" onclick="openAddModal()">
@@ -308,15 +290,25 @@
                         <div class="row g-3">
                             <div class="col-12">
                                 <label class="form-label text-muted small">Transaction Type</label>
-                                <select id="type" class="form-select form-select-lg">
+                                <select id="type" class="form-select form-select-lg" onchange="toggleExpenseBucket()">
                                     <option value="income">Income</option>
                                     <option value="expense" selected>Expense</option>
                                 </select>
                             </div>
+
+                            <div class="col-12" id="expenseBucketDiv">
+                                <label class="form-label text-muted small fw-bold text-danger">Expense Classification</label>
+                                <select id="expenseBucket" class="form-select form-select-lg border-danger border-opacity-25">
+                                    <option value="Fixed Monthly">Fixed Monthly Expenses (Rent, Insurances)</option>
+                                    <option value="Variable">Variable Expense (Food, Shopping, Fun)</option>
+                                    <option value="Debt">Debt Repayment (Loans, Credit Cards)</option>
+                                </select>
+                            </div>
                             
                             <div class="col-12">
-                                <label class="form-label text-muted small">Category</label>
-                                <select id="category" class="form-select form-select-lg" onchange="toggleCustomCategory()"></select>
+                                <label class="form-label text-muted small">Specific Category</label>
+                                <select id="category" class="form-select form-select-lg" onchange="toggleCustomCategory()">
+                                </select>
                             </div>
 
                             <div class="col-12" id="customCategoryDiv" style="display: none;">
@@ -364,164 +356,86 @@
     </script>
 
     <script>
-        // --- NATIVE DEVICE AUTHENTICATION LOGIC ---
+        // --- AUTH LOGIC ---
         let isAppLocked = localStorage.getItem("appLockEnabled") === "true";
-
-        // Helpers to convert data to save locally
-        function arrayBufferToBase64(buffer) {
-            let binary = '';
-            let bytes = new Uint8Array(buffer);
-            for (let i = 0; i < bytes.byteLength; i++) { binary += String.fromCharCode(bytes[i]); }
-            return window.btoa(binary);
-        }
-
-        function base64ToArrayBuffer(base64) {
-            let binary_string = window.atob(base64);
-            let len = binary_string.length;
-            let bytes = new Uint8Array(len);
-            for (let i = 0; i < len; i++) { bytes[i] = binary_string.charCodeAt(i); }
-            return bytes.buffer;
-        }
-
+        function arrayBufferToBase64(buffer) { let binary = ''; let bytes = new Uint8Array(buffer); for (let i = 0; i < bytes.byteLength; i++) { binary += String.fromCharCode(bytes[i]); } return window.btoa(binary); }
+        function base64ToArrayBuffer(base64) { let binary_string = window.atob(base64); let len = binary_string.length; let bytes = new Uint8Array(len); for (let i = 0; i < len; i++) { bytes[i] = binary_string.charCodeAt(i); } return bytes.buffer; }
+        
         function updateLockMenuText() {
-            let textEl = document.getElementById("lockMenuText");
-            let iconEl = document.getElementById("lockMenuIcon");
-            if (isAppLocked) {
-                textEl.innerText = "Disable App Lock";
-                iconEl.className = "bi bi-unlock fs-5 me-3 text-warning";
-            } else {
-                textEl.innerText = "Enable App Lock";
-                iconEl.className = "bi bi-shield-lock fs-5 me-3 text-warning";
-            }
+            let textEl = document.getElementById("lockMenuText"); let iconEl = document.getElementById("lockMenuIcon");
+            if (isAppLocked) { textEl.innerText = "Disable App Lock"; iconEl.className = "bi bi-unlock fs-5 me-3 text-warning"; } 
+            else { textEl.innerText = "Enable App Lock"; iconEl.className = "bi bi-shield-lock fs-5 me-3 text-warning"; }
         }
 
         async function toggleAppLock() {
-            if (!window.PublicKeyCredential) {
-                alert("Your device or browser does not support biometric authentication via web.");
-                return;
-            }
-
+            if (!window.PublicKeyCredential) return alert("Biometric auth not supported.");
             if (isAppLocked) {
-                // Disable Lock
-                localStorage.removeItem("appLockEnabled");
-                localStorage.removeItem("appLockCredId");
-                isAppLocked = false;
-                alert("App Lock successfully disabled.");
-                updateLockMenuText();
+                localStorage.removeItem("appLockEnabled"); localStorage.removeItem("appLockCredId"); isAppLocked = false;
+                alert("App Lock disabled."); updateLockMenuText();
             } else {
-                // Enable Lock
                 try {
-                    const challenge = new Uint8Array(32);
-                    window.crypto.getRandomValues(challenge);
-                    const userId = new Uint8Array(16);
-                    window.crypto.getRandomValues(userId);
-
-                    const createOptions = {
-                        challenge: challenge,
-                        rp: { name: "Pocket Budget", id: window.location.hostname },
-                        user: { id: userId, name: "owner", displayName: "App Owner" },
-                        pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }],
-                        authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
-                        timeout: 60000
-                    };
-
+                    const challenge = new Uint8Array(32); window.crypto.getRandomValues(challenge);
+                    const userId = new Uint8Array(16); window.crypto.getRandomValues(userId);
+                    const createOptions = { challenge, rp: { name: "Pocket Budget", id: window.location.hostname }, user: { id: userId, name: "owner", displayName: "Owner" }, pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }], authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" }, timeout: 60000 };
                     const credential = await navigator.credentials.create({ publicKey: createOptions });
-                    
-                    localStorage.setItem("appLockCredId", arrayBufferToBase64(credential.rawId));
-                    localStorage.setItem("appLockEnabled", "true");
-                    isAppLocked = true;
-                    
-                    alert("App Lock enabled! Next time you open the app, it will ask for your fingerprint or face.");
-                    updateLockMenuText();
-                } catch (err) {
-                    console.error(err);
-                    alert("Failed to setup lock. Make sure your device has a screen lock configured.");
-                }
+                    localStorage.setItem("appLockCredId", arrayBufferToBase64(credential.rawId)); localStorage.setItem("appLockEnabled", "true"); isAppLocked = true;
+                    alert("App Lock enabled!"); updateLockMenuText();
+                } catch (err) { alert("Failed to setup lock."); }
             }
         }
 
         async function unlockApp() {
             try {
-                const challenge = new Uint8Array(32);
-                window.crypto.getRandomValues(challenge);
-                
-                const credIdBase64 = localStorage.getItem("appLockCredId");
-                const credIdBuffer = base64ToArrayBuffer(credIdBase64);
-
-                const requestOptions = {
-                    challenge: challenge,
-                    allowCredentials: [{ id: credIdBuffer, type: "public-key", transports: ["internal"] }],
-                    userVerification: "required",
-                    timeout: 60000
-                };
-
-                // Triggers native Android/iOS biometric prompt
-                await navigator.credentials.get({ publicKey: requestOptions });
-
-                // Success
-                document.getElementById("lockScreen").style.display = "none";
-                document.getElementById("mainApp").style.display = "block";
-            } catch (err) {
-                console.error("Unlock failed", err);
-                // Just leaves them on the lock screen so they can tap the button to try again
-            }
+                const challenge = new Uint8Array(32); window.crypto.getRandomValues(challenge);
+                const credIdBuffer = base64ToArrayBuffer(localStorage.getItem("appLockCredId"));
+                await navigator.credentials.get({ publicKey: { challenge, allowCredentials: [{ id: credIdBuffer, type: "public-key", transports: ["internal"] }], userVerification: "required", timeout: 60000 } });
+                document.getElementById("lockScreen").style.display = "none"; document.getElementById("mainApp").style.display = "block";
+            } catch (err) { console.error("Unlock failed"); }
         }
 
-        // Initialize Authentication on Startup
         function initAppSecurity() {
             updateLockMenuText();
-            if (isAppLocked) {
-                document.getElementById("mainApp").style.display = "none";
-                document.getElementById("lockScreen").style.display = "flex";
-                unlockApp(); // Automatically prompt on load
-            } else {
-                document.getElementById("mainApp").style.display = "block";
-                document.getElementById("lockScreen").style.display = "none";
-            }
+            if (isAppLocked) { document.getElementById("mainApp").style.display = "none"; document.getElementById("lockScreen").style.display = "flex"; unlockApp(); } 
+            else { document.getElementById("mainApp").style.display = "block"; document.getElementById("lockScreen").style.display = "none"; }
         }
-
 
         // --- MAIN APP LOGIC ---
         let entries = JSON.parse(localStorage.getItem("financeData")) || [];
-        let expenseChart;
-        let trendChart;
+        entries.forEach(e => { if (e.type === 'expense' && !e.expenseBucket) e.expenseBucket = "Variable"; });
+
+        let expenseChart, bucketChart, trendLineChart;
         let currentEditIndex = -1;
 
         const defaultCategoryMap = {
-            "Salary": { icon: "💼", bg: "#d1e7dd", color: "#0f5132" },
-            "Freelance": { icon: "🧑‍💻", bg: "#cff4fc", color: "#055160" },
-            "Rent": { icon: "🏠", bg: "#e0cffc", color: "#3d087b" },
-            "Food": { icon: "🍔", bg: "#fff3cd", color: "#664d03" },
-            "Transport": { icon: "🚗", bg: "#cfe2ff", color: "#084298" },
-            "Shopping": { icon: "🛍", bg: "#f8d7da", color: "#842029" },
-            "Subscriptions": { icon: "📺", bg: "#f3d0e5", color: "#6a1a41" },
-            "Travel": { icon: "✈️", bg: "#d2f4ea", color: "#0a3622" },
-            "Utilities": { icon: "💡", bg: "#ffdac1", color: "#854a00" },
-            "Other": { icon: "📦", bg: "#e2e3e5", color: "#41464b" }
+            "Salary": { icon: "💼", bg: "#d1e7dd", color: "#0f5132" }, "Freelance": { icon: "🧑‍💻", bg: "#cff4fc", color: "#055160" },
+            "Rent": { icon: "🏠", bg: "#e0cffc", color: "#3d087b" }, "Food": { icon: "🍔", bg: "#fff3cd", color: "#664d03" },
+            "Transport": { icon: "🚗", bg: "#cfe2ff", color: "#084298" }, "Shopping": { icon: "🛍", bg: "#f8d7da", color: "#842029" },
+            "Subscriptions": { icon: "📺", bg: "#f3d0e5", color: "#6a1a41" }, "Travel": { icon: "✈️", bg: "#d2f4ea", color: "#0a3622" },
+            "Utilities": { icon: "💡", bg: "#ffdac1", color: "#854a00" }, "Other": { icon: "📦", bg: "#e2e3e5", color: "#41464b" }
         };
 
         let savedCategories = JSON.parse(localStorage.getItem("financeCategoryMap"));
         let categoryMap = { ...defaultCategoryMap, ...(savedCategories || {}) };
 
-        document.getElementById('month').valueAsDate = new Date();
+        let today = new Date();
+        let currentMonthStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
+        document.getElementById('month').value = currentMonthStr;
+        document.getElementById('historyMonth').value = currentMonthStr;
+
+        function switchTab(tabName, element) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.getElementById('tab-' + tabName).classList.add('active');
+            document.querySelectorAll('.bottom-nav .nav-item').forEach(nav => nav.classList.remove('active'));
+            element.classList.add('active');
+            closeAllSwipes();
+        }
 
         function toggleFullScreen() {
-            let doc = window.document;
-            let docEl = doc.documentElement;
-            let fsIcon = document.getElementById("fsIcon");
-
-            let requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
-            let cancelFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
-
-            if(!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
-                requestFullScreen.call(docEl);
-                fsIcon.classList.remove("bi-arrows-fullscreen");
-                fsIcon.classList.add("bi-fullscreen-exit");
-            } else {
-                cancelFullScreen.call(doc);
-                fsIcon.classList.remove("bi-fullscreen-exit");
-                fsIcon.classList.add("bi-arrows-fullscreen");
-            }
+            let doc = window.document; let docEl = doc.documentElement; let fsIcon = document.getElementById("fsIcon");
+            let requestFullScreen = docEl.requestFullscreen || docEl.webkitRequestFullScreen;
+            let cancelFullScreen = doc.exitFullscreen || doc.webkitExitFullscreen;
+            if(!doc.fullscreenElement && !doc.webkitFullscreenElement) { requestFullScreen.call(docEl); fsIcon.className = "bi bi-fullscreen-exit fs-5 text-primary"; } 
+            else { cancelFullScreen.call(doc); fsIcon.className = "bi bi-arrows-fullscreen fs-5 text-primary"; }
         }
 
         function save() {
@@ -532,83 +446,42 @@
         function populateCategories() {
             let select = document.getElementById("category");
             let optionsHtml = "";
-            Object.keys(categoryMap).forEach(cat => {
-                let icon = categoryMap[cat].icon;
-                optionsHtml += `<option value="${cat}">${icon} ${cat}</option>`;
-            });
+            Object.keys(categoryMap).forEach(cat => { optionsHtml += `<option value="${cat}">${categoryMap[cat].icon} ${cat}</option>`; });
             optionsHtml += `<option value="custom" class="fw-bold text-primary">➕ Add Custom Category...</option>`;
             select.innerHTML = optionsHtml;
         }
 
         function toggleCustomCategory() {
-            let select = document.getElementById("category");
-            let customDiv = document.getElementById("customCategoryDiv");
-            if (select.value === "custom") {
-                customDiv.style.display = "block";
-                document.getElementById("customCategoryName").focus();
-            } else {
-                customDiv.style.display = "none";
-            }
+            let select = document.getElementById("category"); let customDiv = document.getElementById("customCategoryDiv");
+            if (select.value === "custom") { customDiv.style.display = "block"; document.getElementById("customCategoryName").focus(); } 
+            else { customDiv.style.display = "none"; }
         }
 
-        function getRandomHslColor() {
-            const hue = Math.floor(Math.random() * 360);
-            return { bg: `hsl(${hue}, 70%, 90%)`, color: `hsl(${hue}, 70%, 25%)` };
+        function toggleExpenseBucket() {
+            let type = document.getElementById("type").value;
+            document.getElementById("expenseBucketDiv").style.display = (type === "expense") ? "block" : "none";
         }
 
+        function getRandomHslColor() { const hue = Math.floor(Math.random() * 360); return { bg: `hsl(${hue}, 70%, 90%)`, color: `hsl(${hue}, 70%, 25%)` }; }
+        
         function getCategoryIcon(text) {
-            const emojiRegex = /([\uD800-\uDBFF][\uDC00-\uDFFF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F\uDE80-\uDEF6])/;
-            const match = text.match(emojiRegex);
+            const match = text.match(/([\uD800-\uDBFF][\uDC00-\uDFFF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F\uDE80-\uDEF6])/);
             if (match) return match[0];
-
             const lowerText = text.toLowerCase();
-            const keywordMap = {
-                "food": "🍔", "grocery": "🛒", "groceries": "🛒", "coffee": "☕", "restaurant": "🍽️", "dining": "🍽️", "eat": "🍽️", "snack": "🥨", "pizza": "🍕", "bakery": "🥐", "beer": "🍺", "drink": "🍹",
-                "car": "🚗", "gas": "⛽", "fuel": "⛽", "uber": "🚕", "taxi": "🚕", "transit": "🚌", "bus": "🚌", "train": "🚆", "flight": "✈️", "travel": "✈️", "parking": "🅿️", "bike": "🚲", "toll": "🛣️",
-                "shop": "🛍️", "clothes": "👕", "shoe": "👟", "amazon": "📦", "gift": "🎁", "online": "💻", "electronics": "🔌",
-                "home": "🏠", "house": "🏠", "mortgage": "🏠", "rent": "🏠", "water": "💧", "electric": "⚡", "internet": "🌐", "wifi": "🌐", "phone": "📱", "mobile": "📱", "utility": "🔌", "repair": "🛠️",
-                "health": "🏥", "doctor": "👨‍⚕️", "dentist": "🦷", "medicine": "💊", "pharmacy": "💊", "gym": "🏋️‍♂️", "fitness": "🏋️‍♂️", "workout": "🏃",
-                "movie": "🎬", "cinema": "🍿", "game": "🎮", "music": "🎵", "party": "🎉", "fun": "🎈", "concert": "🎸", "hobby": "🎨",
-                "pet": "🐾", "dog": "🐶", "cat": "🐱", "vet": "🩺", "animal": "🐰",
-                "school": "🎓", "college": "🎓", "tuition": "🏫", "book": "📚", "course": "📖", "baby": "👶", "kid": "🧸", "child": "🧒", "toy": "🪁",
-                "bank": "🏦", "fee": "💳", "tax": "🧾", "insurance": "🛡️", "loan": "💸", "credit": "💳", "salary": "💰", "wage": "💵", "pay": "🤑", "freelance": "💻", "savings": "🐷"
-            };
-
-            for (let keyword in keywordMap) {
-                if (lowerText.includes(keyword)) return keywordMap[keyword];
-            }
+            const dict = { "food":"🍔", "grocery":"🛒", "coffee":"☕", "restaurant":"🍽️", "car":"🚗", "gas":"⛽", "shop":"🛍️", "clothes":"👕", "amazon":"📦", "home":"🏠", "rent":"🏠", "water":"💧", "electric":"⚡", "internet":"🌐", "phone":"📱", "health":"🏥", "doctor":"👨‍⚕️", "gym":"🏋️‍♂️", "movie":"🎬", "game":"🎮", "pet":"🐾", "dog":"🐶", "cat":"🐱", "school":"🎓", "bank":"🏦", "tax":"🧾", "loan":"💸", "salary":"💰", "savings":"🐷" };
+            for (let key in dict) { if (lowerText.includes(key)) return dict[key]; }
             return "🏷️";
         }
 
         function processRecurringEntries() {
-            let today = new Date();
-            let currentMonthStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
-            let addedNew = false;
-            
-            let uniqueTemplates = [];
+            let addedNew = false; let uniqueTemplates = [];
             entries.filter(e => e.recurring).forEach(template => {
-                let exists = uniqueTemplates.find(t => t.type === template.type && t.category === template.category && t.amount === template.amount);
-                if (!exists) uniqueTemplates.push(template);
+                if (!uniqueTemplates.find(t => t.type === template.type && t.category === template.category && t.amount === template.amount)) uniqueTemplates.push(template);
             });
-
             uniqueTemplates.forEach(template => {
                 if (template.month < currentMonthStr) {
-                    let existsInCurrentMonth = entries.find(e => 
-                        e.month === currentMonthStr && 
-                        e.type === template.type && 
-                        e.category === template.category && 
-                        e.amount === template.amount
-                    );
-
-                    if (!existsInCurrentMonth) {
-                        entries.push({
-                            type: template.type,
-                            category: template.category,
-                            amount: template.amount,
-                            month: currentMonthStr,
-                            recurring: true,
-                            description: template.description
-                        });
+                    if (!entries.find(e => e.month === currentMonthStr && e.type === template.type && e.category === template.category && e.amount === template.amount)) {
+                        entries.push({ type: template.type, category: template.category, amount: template.amount, month: currentMonthStr, recurring: true, description: template.description, expenseBucket: template.expenseBucket });
                         addedNew = true;
                     }
                 }
@@ -622,346 +495,228 @@
             document.getElementById("saveBtn").innerText = "Save Transaction";
             
             document.getElementById("type").value = "expense";
+            toggleExpenseBucket();
+            document.getElementById("expenseBucket").value = "Variable";
+            
             document.getElementById("category").selectedIndex = 0;
             document.getElementById("customCategoryName").value = "";
             document.getElementById("customCategoryDiv").style.display = "none";
             document.getElementById("description").value = "";
             document.getElementById("amount").value = "";
-            document.getElementById("month").valueAsDate = new Date();
+            document.getElementById("month").value = currentMonthStr;
             document.getElementById("recurring").checked = false;
 
-            let modalEl = document.getElementById('addEntryModal');
-            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('addEntryModal')).show();
         }
 
         function editEntry(i) {
-            closeAllSwipes();
-            currentEditIndex = i; 
-            let e = entries[i];
-
+            closeAllSwipes(); currentEditIndex = i; let e = entries[i];
             document.getElementById("modalTitle").innerText = "Edit Entry";
             document.getElementById("saveBtn").innerText = "Update Transaction";
 
             document.getElementById("type").value = e.type;
+            toggleExpenseBucket();
+            if (e.type === 'expense') document.getElementById("expenseBucket").value = e.expenseBucket || "Variable";
             
             let catSelect = document.getElementById("category");
-            let optionsArray = Array.from(catSelect.options);
-            let catExists = optionsArray.some(opt => opt.value === e.category);
-
-            if (catExists) {
-                catSelect.value = e.category;
-                document.getElementById("customCategoryDiv").style.display = "none";
+            if (Array.from(catSelect.options).some(opt => opt.value === e.category)) {
+                catSelect.value = e.category; document.getElementById("customCategoryDiv").style.display = "none";
             } else {
-                catSelect.value = "custom";
-                document.getElementById("customCategoryDiv").style.display = "block";
-                document.getElementById("customCategoryName").value = e.category;
+                catSelect.value = "custom"; document.getElementById("customCategoryDiv").style.display = "block"; document.getElementById("customCategoryName").value = e.category;
             }
-
             document.getElementById("description").value = e.description || "";
             document.getElementById("amount").value = e.amount;
             document.getElementById("month").value = e.month;
             document.getElementById("recurring").checked = e.recurring || false;
 
-            let modalEl = document.getElementById('addEntryModal');
-            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('addEntryModal')).show();
         }
 
         function saveEntry() {
             let type = document.getElementById("type").value;
+            let expenseBucket = (type === "expense") ? document.getElementById("expenseBucket").value : null;
             let category = document.getElementById("category").value;
             let amount = parseFloat(document.getElementById("amount").value);
             let month = document.getElementById("month").value;
             let description = document.getElementById("description").value.trim();
             let recurring = document.getElementById("recurring").checked;
 
-            if (!amount || !month) {
-                alert("Please enter a valid amount and month.");
-                return;
-            }
+            if (!amount || !month) return alert("Please enter a valid amount and month.");
 
             if (category === "custom") {
-                let rawCustomName = document.getElementById("customCategoryName").value.trim();
-                if (!rawCustomName) {
-                    alert("Please enter a name for your custom category.");
-                    return;
-                }
-                
-                let icon = getCategoryIcon(rawCustomName);
-                let cleanName = rawCustomName.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F\uDE80-\uDEF6]/g, '').trim();
-                if(!cleanName) cleanName = "Custom"; 
-
-                let colors = getRandomHslColor();
-                categoryMap[cleanName] = { icon: icon, bg: colors.bg, color: colors.color };
-                category = cleanName; 
-                populateCategories(); 
+                let rawName = document.getElementById("customCategoryName").value.trim();
+                if (!rawName) return alert("Enter a category name.");
+                let cleanName = rawName.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F\uDE80-\uDEF6]/g, '').trim() || "Custom";
+                categoryMap[cleanName] = { icon: getCategoryIcon(rawName), ...getRandomHslColor() };
+                category = cleanName; populateCategories(); 
             }
 
-            if (currentEditIndex >= 0) {
-                entries[currentEditIndex] = { type, category, amount, month, description, recurring };
-            } else {
-                entries.push({ type, category, amount, month, description, recurring });
-            }
-
-            save();
-            render();
-
-            let modalEl = document.getElementById('addEntryModal');
-            bootstrap.Modal.getInstance(modalEl).hide();
+            let newEntry = { type, expenseBucket, category, amount, month, description, recurring };
+            if (currentEditIndex >= 0) entries[currentEditIndex] = newEntry; else entries.push(newEntry);
+            save(); renderAll(); bootstrap.Modal.getInstance(document.getElementById('addEntryModal')).hide();
         }
 
-        function deleteEntry(i) {
-            if(confirm("Are you sure you want to delete this entry?")) {
-                entries.splice(i, 1);
-                save();
-                render();
-            }
+        function deleteEntry(i) { if(confirm("Delete this entry?")) { entries.splice(i, 1); save(); renderAll(); } }
+
+        // --- ADAPTIVE SWIPE LOGIC (Touch + Pointer Events for Desktop) ---
+        let startX = 0, startY = 0, activeSwipeElement = null, isDragging = false;
+        
+        function closeAllSwipes() { 
+            if (activeSwipeElement) { 
+                let f = activeSwipeElement.querySelector('.swipe-front'); 
+                if(f) f.style.transform = 'translateX(0px)'; 
+                activeSwipeElement = null; 
+            } 
         }
-
-        function exportData() {
-            let exportObj = { entries: entries, categories: categoryMap };
-            let blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
-            let url = URL.createObjectURL(blob);
-            let a = document.createElement("a");
-            a.href = url;
-            a.download = "pocket_budget_backup.json";
-            a.click();
-        }
-
-        function importData(e) {
-            let file = e.target.files[0];
-            if (!file) return;
-            let reader = new FileReader();
-            reader.onload = function (ev) {
-                try {
-                    let importedData = JSON.parse(ev.target.result);
-                    if (Array.isArray(importedData)) {
-                        entries = importedData;
-                    } else {
-                        entries = importedData.entries || [];
-                        if (importedData.categories) {
-                            categoryMap = { ...defaultCategoryMap, ...importedData.categories };
-                        }
-                    }
-                    save();
-                    populateCategories();
-                    processRecurringEntries();
-                    render();
-                } catch(err) {
-                    alert("Invalid file format");
-                }
-            }
-            reader.readAsText(file);
-        }
-
-        // --- SWIPE LOGIC ENGINE ---
-        let touchStartX = 0;
-        let touchStartY = 0;
-        let activeSwipeElement = null;
-
-        function closeAllSwipes() {
-            if (activeSwipeElement) {
-                let front = activeSwipeElement.querySelector('.swipe-front');
-                if(front) front.style.transform = 'translateX(0px)';
-                activeSwipeElement = null;
-            }
-        }
-
-        document.addEventListener('touchstart', function(e) {
-            if (activeSwipeElement && !activeSwipeElement.contains(e.target)) {
-                closeAllSwipes();
+        
+        // Listen globally for taps/clicks to close open cards
+        document.addEventListener('pointerdown', e => { 
+            if (activeSwipeElement && !activeSwipeElement.contains(e.target) && !e.target.closest('.swipe-actions')) {
+                closeAllSwipes(); 
             }
         });
-
-        function handleTouchStart(e) {
-            touchStartX = e.touches[0].clientX;
-            touchStartY = e.touches[0].clientY;
-            let container = e.currentTarget;
-            if (activeSwipeElement && activeSwipeElement !== container) closeAllSwipes();
+        
+        function handlePointerDown(e) { 
+            isDragging = true; 
+            startX = e.clientX; 
+            startY = e.clientY; 
+            if (activeSwipeElement && activeSwipeElement !== e.currentTarget) closeAllSwipes(); 
+            e.currentTarget.setPointerCapture(e.pointerId); // Lock tracking to this element
         }
-
-        function handleTouchMove(e) {
-            if (!touchStartX) return;
-            let touchCurrentX = e.touches[0].clientX;
-            let touchCurrentY = e.touches[0].clientY;
+        
+        function handlePointerMove(e) {
+            if (!isDragging || !startX) return; 
+            let dx = startX - e.clientX, dy = Math.abs(startY - e.clientY);
             
-            let diffX = touchStartX - touchCurrentX;
-            let diffY = Math.abs(touchStartY - touchCurrentY);
-            
-            if (diffY > Math.abs(diffX)) return; 
+            // Allow vertical scrolling to continue unhindered
+            if (dy > Math.abs(dx)) return; 
             
             let front = e.currentTarget.querySelector('.swipe-front');
-
-            if (diffX > 0 && diffX <= 120) {
-                front.style.transform = `translateX(-${diffX}px)`;
+            if (dx > 0 && dx <= 120) { 
+                front.style.transform = `translateX(-${dx}px)`; 
                 front.style.transition = 'none'; 
-            } else if (diffX < 0 && activeSwipeElement === e.currentTarget) {
-                let newPos = -100 - diffX;
-                if (newPos > -100 && newPos <= 0) {
-                    front.style.transform = `translateX(${newPos}px)`;
-                    front.style.transition = 'none';
-                }
+            } 
+            else if (dx < 0 && activeSwipeElement === e.currentTarget) { 
+                let n = -104 - dx; 
+                if (n > -104 && n <= 0) { 
+                    front.style.transform = `translateX(${n}px)`; 
+                    front.style.transition = 'none'; 
+                } 
             }
         }
-
-        function handleTouchEnd(e) {
-            if (!touchStartX) return;
-            let touchCurrentX = e.changedTouches[0].clientX;
-            let diffX = touchStartX - touchCurrentX;
-            let container = e.currentTarget;
-            let front = container.querySelector('.swipe-front');
+        
+        function handlePointerUp(e) {
+            if (!isDragging || !startX) return; 
+            isDragging = false;
+            let dx = startX - e.clientX, front = e.currentTarget.querySelector('.swipe-front');
             
             front.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
-
-            if (diffX > 40) {
+            if (dx > 40) { 
                 front.style.transform = `translateX(-104px)`; 
-                activeSwipeElement = container;
-            } else {
-                front.style.transform = `translateX(0px)`;
-                if (activeSwipeElement === container) activeSwipeElement = null;
+                activeSwipeElement = e.currentTarget; 
+            } else { 
+                front.style.transform = `translateX(0px)`; 
+                if (activeSwipeElement === e.currentTarget) activeSwipeElement = null; 
             }
-            touchStartX = 0;
-            touchStartY = 0;
+            startX = 0; startY = 0;
+            e.currentTarget.releasePointerCapture(e.pointerId);
         }
 
-        function render() {
-            let list = document.getElementById("transactionList");
-            list.innerHTML = "";
+        // --- UI RENDERING ---
+        function createTransactionHTML(e, i) {
+            let isInc = e.type === 'income';
+            let catInfo = categoryMap[e.category] || { icon: "🏷️", bg: "#e2e3e5", color: "#41464b" };
+            
+            let badgeHtml = "";
+            if (!isInc && e.expenseBucket) {
+                let badgeColor = e.expenseBucket === "Fixed Monthly" ? "bg-primary" : (e.expenseBucket === "Debt" ? "bg-danger" : "bg-warning text-dark");
+                badgeHtml = `<span class="badge ${badgeColor} rounded-pill ms-2" style="font-size: 0.60rem;">${e.expenseBucket}</span>`;
+            }
+
+            // MODIFIED: Uses onpointer events instead of ontouch to support desktop dragging natively
+            return `
+            <div class="swipe-container" onpointerdown="handlePointerDown(event)" onpointermove="handlePointerMove(event)" onpointerup="handlePointerUp(event)" onpointercancel="handlePointerUp(event)">
+                <div class="swipe-actions">
+                    <button class="btn-swipe edit" onclick="editEntry(${i})"><i class="bi bi-pencil"></i></button>
+                    <button class="btn-swipe delete" onclick="deleteEntry(${i})"><i class="bi bi-trash"></i></button>
+                </div>
+                <div class="swipe-front">
+                    <div class="d-flex align-items-center flex-grow-1 overflow-hidden">
+                        <div class="icon-box" style="background-color: ${catInfo.bg}; color: ${catInfo.color};">${catInfo.icon}</div>
+                        <div class="text-truncate pe-2">
+                            <h6 class="mb-0 fw-bold text-truncate d-flex align-items-center">${e.category} ${badgeHtml}</h6>
+                            ${e.description ? `<div class="text-muted mb-1 text-truncate" style="font-size: 0.8rem; line-height: 1.2;">${e.description}</div>` : ''}
+                            <small class="text-muted d-block" style="font-size: 0.75rem;">${e.recurring ? `<i class="bi bi-repeat text-primary me-1"></i>` : ''}${e.month}</small>
+                        </div>
+                    </div>
+                    <div class="text-end ms-2 flex-shrink-0">
+                        <h6 class="mb-0 fw-bold ${isInc ? 'text-success' : 'text-danger'}">${isInc ? '+' : '-'}€${e.amount.toFixed(2)}</h6>
+                    </div>
+                </div>
+            </div>`;
+        }
+
+        function renderAll() {
             closeAllSwipes();
 
+            let dList = document.getElementById("dashboardList");
+            dList.innerHTML = entries.length === 0 ? `<div class="text-center text-muted p-4">No transactions. Click + to add!</div>` : "";
+            let sortedEntries = [...entries].map((e, index) => ({...e, originalIndex: index})).reverse();
+            
+            sortedEntries.slice(0, 5).forEach(e => { dList.innerHTML += createTransactionHTML(e, e.originalIndex); });
+            
             let income = entries.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0);
             let expense = entries.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0);
-
-            if (entries.length === 0) {
-                list.innerHTML = `<div class="text-center text-muted p-4">No transactions yet. Click + to add one!</div>`;
-            } else {
-                [...entries].reverse().forEach((e, reversedIndex) => {
-                    let i = entries.length - 1 - reversedIndex;
-                    let isIncome = e.type === 'income';
-                    let amountClass = isIncome ? 'text-success' : 'text-danger';
-                    let sign = isIncome ? '+' : '-';
-                    
-                    let catInfo = categoryMap[e.category] || categoryMap["Other"] || { icon: "🏷️", bg: "#e2e3e5", color: "#41464b" };
-                    let recurringBadge = e.recurring ? `<i class="bi bi-repeat text-primary me-1" title="Recurring"></i>` : '';
-                    let descHtml = e.description ? `<div class="text-muted mb-1" style="font-size: 0.8rem; line-height: 1.2;">${e.description}</div>` : '';
-
-                    let item = `
-                    <div class="swipe-container" ontouchstart="handleTouchStart(event)" ontouchmove="handleTouchMove(event)" ontouchend="handleTouchEnd(event)">
-                        
-                        <div class="swipe-actions">
-                            <button class="btn-swipe edit" onclick="editEntry(${i})"><i class="bi bi-pencil"></i></button>
-                            <button class="btn-swipe delete" onclick="deleteEntry(${i})"><i class="bi bi-trash"></i></button>
-                        </div>
-                        
-                        <div class="swipe-front">
-                            <div class="d-flex align-items-center flex-grow-1 overflow-hidden">
-                                <div class="icon-box" style="background-color: ${catInfo.bg}; color: ${catInfo.color};">
-                                    ${catInfo.icon}
-                                </div>
-                                <div class="text-truncate pe-2">
-                                    <h6 class="mb-0 fw-bold text-truncate">${e.category}</h6>
-                                    ${descHtml}
-                                    <small class="text-muted d-block" style="font-size: 0.75rem;">${recurringBadge} ${e.month}</small>
-                                </div>
-                            </div>
-                            <div class="text-end ms-2 flex-shrink-0">
-                                <h6 class="mb-0 fw-bold ${amountClass}">${sign}€${e.amount.toFixed(2)}</h6>
-                            </div>
-                        </div>
-
-                    </div>`;
-                    list.innerHTML += item;
-                });
-            }
-
-            updateSummary(income, expense);
-            updateCharts();
-            updateAnalytics(income, expense);
-        }
-
-        function updateSummary(income, expense) {
-            let balance = income - expense;
             document.getElementById("incomeTotal").innerText = "€" + income.toFixed(2);
             document.getElementById("expenseTotal").innerText = "€" + expense.toFixed(2);
-            document.getElementById("balanceTotal").innerText = "€" + balance.toFixed(2);
+            document.getElementById("balanceTotal").innerText = "€" + (income - expense).toFixed(2);
+
+            let hList = document.getElementById("historyList");
+            let selMonth = document.getElementById("historyMonth").value;
+            let monthEntries = sortedEntries.filter(e => e.month === selMonth);
+            
+            hList.innerHTML = monthEntries.length === 0 ? `<div class="text-center text-muted p-4">No data for ${selMonth}</div>` : "";
+            let monthSpent = 0;
+            monthEntries.forEach(e => {
+                hList.innerHTML += createTransactionHTML(e, e.originalIndex);
+                if(e.type === 'expense') monthSpent += e.amount;
+            });
+            document.getElementById("historyMonthTotal").innerText = `€${monthSpent.toFixed(2)} Spent`;
+
+            updateCharts();
         }
 
         function updateCharts() {
-            let map = {};
-            entries.filter(e => e.type === 'expense').forEach(e => {
-                map[e.category] = (map[e.category] || 0) + e.amount;
-            });
-
-            let labels = Object.keys(map);
-            let values = Object.values(map);
-
+            let catMap = {}; entries.filter(e => e.type === 'expense').forEach(e => { catMap[e.category] = (catMap[e.category] || 0) + e.amount; });
             if (expenseChart) expenseChart.destroy();
-            let ctxExp = document.getElementById("expenseChart");
-            if(values.length > 0) {
-                expenseChart = new Chart(ctxExp, {
-                    type: "doughnut",
-                    data: {
-                        labels: labels,
-                        datasets: [{ 
-                            data: values,
-                            backgroundColor: ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6']
-                        }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 12 } } } }
-                });
-            } else {
-                ctxExp.getContext("2d").clearRect(0, 0, ctxExp.width, ctxExp.height);
-            }
+            if(Object.keys(catMap).length > 0) expenseChart = new Chart(document.getElementById("expenseChart"), { type: "doughnut", data: { labels: Object.keys(catMap), datasets: [{ data: Object.values(catMap), backgroundColor: ['#4F46E5','#10B981','#F59E0B','#EF4444','#8B5CF6','#EC4899','#14B8A6'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: {size: 10} } } } } });
 
-            let incomeTotal = entries.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0);
-            let expenseTotal = entries.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0);
+            let bucketMap = {"Fixed Monthly": 0, "Variable": 0, "Debt": 0};
+            entries.filter(e => e.type === 'expense').forEach(e => { bucketMap[e.expenseBucket] += e.amount; });
+            if (bucketChart) bucketChart.destroy();
+            if(Object.values(bucketMap).some(v => v>0)) bucketChart = new Chart(document.getElementById("bucketChart"), { type: "doughnut", data: { labels: Object.keys(bucketMap), datasets: [{ data: Object.values(bucketMap), backgroundColor: ['#4F46E5', '#F59E0B', '#EF4444'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } } });
 
-            if (trendChart) trendChart.destroy();
-            trendChart = new Chart(document.getElementById("trendChart"), {
-                type: "bar",
-                data: {
-                    labels: ['Income', 'Expenses'],
-                    datasets: [{
-                        label: 'Amount (€)',
-                        data: [incomeTotal, expenseTotal],
-                        backgroundColor: ['#10B981', '#EF4444'],
-                        borderRadius: 6
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
-            });
+            let trendMap = {}; 
+            entries.filter(e => e.type === 'expense').forEach(e => { trendMap[e.month] = (trendMap[e.month] || 0) + e.amount; });
+            let sortedMonths = Object.keys(trendMap).sort();
+            let trendValues = sortedMonths.map(m => trendMap[m]);
+            if (trendLineChart) trendLineChart.destroy();
+            if(sortedMonths.length > 0) trendLineChart = new Chart(document.getElementById("trendLineChart"), { type: "line", data: { labels: sortedMonths, datasets: [{ label: 'Total Spent (€)', data: trendValues, borderColor: '#EF4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.3, pointBackgroundColor: '#EF4444' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
+
+            let aText = document.getElementById("analyticsText"); aText.innerHTML = "";
+            let inc = entries.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0);
+            let exp = entries.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0);
+            if(inc === 0 && exp === 0) return aText.innerHTML = "<li>Add some entries to see insights!</li>";
+            if(inc > 0) aText.innerHTML += `<li><strong>Savings rate:</strong> ${((inc - exp) / inc * 100).toFixed(1)}% of income saved.</li>`;
+            let biggest = Object.entries(catMap).sort((a,b)=>b[1]-a[1])[0];
+            if(biggest) aText.innerHTML += `<li><strong>Top expense category:</strong> ${biggest[0]} (€${biggest[1].toFixed(2)}).</li>`;
+            if(bucketMap["Debt"] > 0) aText.innerHTML += `<li><strong>Debt burden:</strong> ${((bucketMap["Debt"] / inc) * 100).toFixed(1)}% of income goes to debt.</li>`;
         }
 
-        function updateAnalytics(income, expense) {
-            let analytics = document.getElementById("analytics");
-            analytics.innerHTML = "";
+        function exportData() { let b = new Blob([JSON.stringify({entries, categories: categoryMap}, null, 2)], {type: 'application/json'}); let a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "pocket_budget_backup.json"; a.click(); }
+        function importData(e) { let f = e.target.files[0]; if(!f) return; let r = new FileReader(); r.onload = ev => { try { let d = JSON.parse(ev.target.result); if(Array.isArray(d)) entries = d; else { entries = d.entries || []; categoryMap = { ...defaultCategoryMap, ...(d.categories || {}) }; } save(); populateCategories(); renderAll(); } catch(err) { alert("Invalid format"); } }; r.readAsText(f); }
 
-            if (income === 0 && expense === 0) {
-                analytics.innerHTML = "<li>Add some entries to see insights!</li>";
-                return;
-            }
-
-            if (income > 0) {
-                let savings = ((income - expense) / income * 100).toFixed(1);
-                analytics.innerHTML += `<li><strong>Savings rate:</strong> ${savings}% of income saved.</li>`;
-            }
-
-            let catTotals = {};
-            entries.filter(e => e.type === 'expense').forEach(e => {
-                catTotals[e.category] = (catTotals[e.category] || 0) + e.amount;
-            });
-
-            let biggest = Object.entries(catTotals).sort((a, b) => b[1] - a[1])[0];
-            if (biggest) {
-                analytics.innerHTML += `<li><strong>Top expense:</strong> ${biggest[0]} (€${biggest[1].toFixed(2)}).</li>`;
-            }
-        }
-
-        // INIT SCRIPT: Auth First, Data Second.
-        initAppSecurity();
-        populateCategories();
-        processRecurringEntries(); 
-        render();
-
+        initAppSecurity(); populateCategories(); processRecurringEntries(); renderAll();
     </script>
 </body>
 </html>
