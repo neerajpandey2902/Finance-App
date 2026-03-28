@@ -79,18 +79,21 @@
 <body>
 
     <div id="loginScreen">
-        <div class="text-center mb-5">
+        <div class="text-center mb-4">
             <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); border-radius: 24px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto; box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);">
                 <i class="bi bi-cloud-check-fill text-white" style="font-size: 40px;"></i>
             </div>
-            <h1 class="fw-bold text-dark mb-2">Pocket Budget</h1>
-            <p class="text-muted">Securely sync your finances across all devices.</p>
+            <h2 class="fw-bold text-dark mb-1">Pocket Budget</h2>
+            <p class="text-muted small">Secure Cloud Sync</p>
         </div>
         
-        <button class="google-btn" onclick="signInWithGoogle()">
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="24" height="24" alt="Google">
-            Sign in with Google
-        </button>
+        <div class="card card-custom p-4 w-100" style="max-width: 350px;">
+            <input type="email" id="emailInput" class="form-control form-control-lg mb-3 bg-light" placeholder="Email Address" required>
+            <input type="password" id="passwordInput" class="form-control form-control-lg mb-4 bg-light" placeholder="Password" required>
+            
+            <button onclick="loginWithEmail()" id="loginBtn" class="btn btn-primary btn-lg w-100 mb-2 rounded-pill fw-bold shadow-sm">Log In</button>
+            <button onclick="signUpWithEmail()" id="signupBtn" class="btn btn-outline-primary btn-lg w-100 rounded-pill fw-bold">Create Account</button>
+        </div>
     </div>
 
     <div id="mainApp" style="display: none;">
@@ -281,7 +284,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         
         // --- CHANGED THIS LINE: Now imports signInWithRedirect instead of signInWithPopup ---
-        import { getAuth, signInWithRedirect, getRedirectResult, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
         
         import { getDatabase, ref, onValue, push, set, update, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
@@ -375,11 +378,32 @@ getRedirectResult(auth).then((result) => {
         // --- EXPORT GLOBALS FOR HTML ONCLICK BUTTONS ---
         
         // --- CHANGED THIS LOGIC: Now uses signInWithRedirect! ---
-        window.signInWithGoogle = () => {
-    const provider = new GoogleAuthProvider();
-    // This tells the browser to navigate away to Google, no popups allowed!
-    signInWithRedirect(auth, provider);
-};
+        window.loginWithEmail = () => {
+            let email = document.getElementById('emailInput').value.trim();
+            let pass = document.getElementById('passwordInput').value.trim();
+            if(!email || !pass) return alert("Please enter email and password.");
+            
+            document.getElementById('loginBtn').innerText = "Logging in...";
+            signInWithEmailAndPassword(auth, email, pass)
+                .catch(error => {
+                    alert("Login Failed: " + error.message);
+                    document.getElementById('loginBtn').innerText = "Log In";
+                });
+        };
+
+        window.signUpWithEmail = () => {
+            let email = document.getElementById('emailInput').value.trim();
+            let pass = document.getElementById('passwordInput').value.trim();
+            if(!email || !pass) return alert("Please enter email and password.");
+            if(pass.length < 6) return alert("Password must be at least 6 characters.");
+            
+            document.getElementById('signupBtn').innerText = "Creating...";
+            createUserWithEmailAndPassword(auth, email, pass)
+                .catch(error => {
+                    alert("Sign Up Failed: " + error.message);
+                    document.getElementById('signupBtn').innerText = "Create Account";
+                });
+        };
 
         window.signOutUser = () => {
             if(unsubscribeDb) unsubscribeDb(); // Stop listening
