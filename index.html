@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#4F46E5">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>Pocket Budget Cloud</title>
+    <title>Pocket Budget</title>
 
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-192.png">
@@ -45,8 +45,10 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
 
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
         .dropdown-menu-custom { border-radius: 16px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.1); padding: 8px; min-width: 220px; }
-        .dropdown-item-custom { border-radius: 10px; padding: 10px 16px; transition: background-color 0.2s; display: flex; align-items: center; font-size: 0.95rem; color: #4b5563; cursor: pointer;}
+        .dropdown-item-custom { border-radius: 10px; padding: 10px 16px; transition: background-color 0.2s; display: flex; align-items: center; font-size: 0.95rem; color: #4b5563; }
         .dropdown-item-custom:hover, .dropdown-item-custom:active { background-color: #f3f4f6; }
 
         .card-custom { border: none; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.04); }
@@ -70,36 +72,23 @@
         @media (max-width: 576px) { .modal-dialog { margin: auto; position: absolute; bottom: 0; width: 100%; } }
         .chart-container { position: relative; height: 220px; width: 100%; }
 
-        /* Cloud Login Screen */
-        #loginScreen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-color); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        #lockScreen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; }
     </style>
 </head>
 <body>
 
-    <div id="loginScreen" style="display: none;">
-        <div class="text-center mb-4">
-            <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%); border-radius: 24px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px auto; box-shadow: 0 10px 20px rgba(79, 70, 229, 0.3);">
-                <i class="bi bi-cloud-check-fill text-white" style="font-size: 40px;"></i>
-            </div>
-            <h2 class="fw-bold text-dark mb-1">Pocket Budget</h2>
-            <p class="text-muted small">Secure Cloud Sync</p>
-        </div>
-        
-        <div class="card card-custom p-4 w-100" style="max-width: 350px;">
-            <input type="email" id="emailInput" class="form-control form-control-lg mb-3 bg-light" placeholder="Email Address" required>
-            <input type="password" id="passwordInput" class="form-control form-control-lg mb-4 bg-light" placeholder="Password" required>
-            
-            <button onclick="loginWithEmail()" id="loginBtn" class="btn btn-primary btn-lg w-100 mb-2 rounded-pill fw-bold shadow-sm">Log In</button>
-            <button onclick="signUpWithEmail()" id="signupBtn" class="btn btn-outline-primary btn-lg w-100 rounded-pill fw-bold">Create Account</button>
-        </div>
+    <div id="lockScreen" style="display: none;">
+        <i class="bi bi-shield-lock-fill" style="font-size: 5rem; margin-bottom: 20px;"></i>
+        <h2 class="fw-bold mb-4">Pocket Budget</h2>
+        <p class="mb-4 text-white-50">App is locked for your privacy</p>
+        <button class="btn btn-light btn-lg rounded-pill px-4 fw-bold shadow-sm" onclick="unlockApp()">
+            <i class="bi bi-fingerprint fs-4 me-2 align-middle"></i> Unlock App
+        </button>
     </div>
 
     <div id="mainApp" style="display: none;">
         <div class="app-header">
-            <div class="d-flex align-items-center gap-2">
-                <img id="headerAvatar" src="" style="width: 32px; height: 32px; border-radius: 16px; object-fit: cover; display: none;">
-                <h5 class="mb-0 fw-bold"><span id="headerProfileName">Budget</span></h5>
-            </div>
+            <h5 class="mb-0 fw-bold"><i class="bi bi-wallet2 text-primary"></i> Pocket Budget</h5>
             
             <div class="d-flex align-items-center gap-2">
                 <button onclick="toggleFullScreen()" class="btn btn-light border-0 shadow-sm rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
@@ -119,9 +108,22 @@
                         </li>
                         <li><hr class="dropdown-divider my-2 border-secondary border-opacity-10"></li>
                         <li>
-                            <a class="dropdown-item dropdown-item-custom fw-bold" onclick="signOutUser()">
-                                <i class="bi bi-box-arrow-right fs-5 me-3 text-secondary"></i> Secure Log Out
+                            <a class="dropdown-item dropdown-item-custom fw-bold" href="#" onclick="toggleAppLock()">
+                                <i id="lockMenuIcon" class="bi bi-shield-lock fs-5 me-3 text-warning"></i> 
+                                <span id="lockMenuText">Enable App Lock</span>
                             </a>
+                        </li>
+                        <li><hr class="dropdown-divider my-2 border-secondary border-opacity-10"></li>
+                        <li>
+                            <a class="dropdown-item dropdown-item-custom fw-bold" href="#" onclick="exportData()">
+                                <i class="bi bi-download fs-5 me-3 text-primary"></i> Export Backup
+                            </a>
+                        </li>
+                        <li>
+                            <label class="dropdown-item dropdown-item-custom fw-bold mb-0" style="cursor: pointer;">
+                                <i class="bi bi-upload fs-5 me-3 text-success"></i> Import Backup
+                                <input type="file" hidden onchange="importData(event)">
+                            </label>
                         </li>
                     </ul>
                 </div>
@@ -156,11 +158,6 @@
                     <small class="text-muted" style="font-size: 0.7rem;"><i class="bi bi-arrows-collapse"></i> Swipe left to edit</small>
                 </div>
                 
-                <div id="loadingData" class="text-center p-4">
-                    <div class="spinner-border text-primary" role="status"></div>
-                    <div class="small text-muted mt-2">Syncing from Cloud...</div>
-                </div>
-
                 <div id="dashboardList"></div>
             </div>
 
@@ -201,14 +198,30 @@
                         </div>
                     </div>
                 </div>
+                
+                <div class="card card-custom p-3 mb-4 bg-white border border-info border-opacity-25">
+                    <h6 class="text-info fw-bold mb-2"><i class="bi bi-lightbulb"></i> Insights</h6>
+                    <ul id="analyticsText" class="mb-0 ps-3 text-muted small">
+                        <li>Add some entries to see insights!</li>
+                    </ul>
+                </div>
             </div>
 
         </div>
 
         <div class="bottom-nav">
-            <div class="nav-item active" onclick="switchTab('dashboard', this)"><i class="bi bi-grid-fill"></i>Dashboard</div>
-            <div class="nav-item" onclick="switchTab('history', this)"><i class="bi bi-clock-history"></i>History</div>
-            <div class="nav-item" onclick="switchTab('analytics', this)"><i class="bi bi-pie-chart-fill"></i>Analytics</div>
+            <div class="nav-item active" onclick="switchTab('dashboard', this)">
+                <i class="bi bi-grid-fill"></i>
+                Dashboard
+            </div>
+            <div class="nav-item" onclick="switchTab('history', this)">
+                <i class="bi bi-clock-history"></i>
+                History
+            </div>
+            <div class="nav-item" onclick="switchTab('analytics', this)">
+                <i class="bi bi-pie-chart-fill"></i>
+                Analytics
+            </div>
         </div>
 
         <button class="fab" onclick="openAddModal()">
@@ -224,8 +237,6 @@
                     </div>
                     <div class="modal-body">
                         <div class="row g-3">
-                            <input type="hidden" id="currentEditId">
-
                             <div class="col-12">
                                 <label class="form-label text-muted small">Transaction Type</label>
                                 <select id="type" class="form-select form-select-lg" onchange="toggleExpenseBucket()">
@@ -237,25 +248,26 @@
                             <div class="col-12" id="expenseBucketDiv">
                                 <label class="form-label text-muted small fw-bold text-danger">Expense Classification</label>
                                 <select id="expenseBucket" class="form-select form-select-lg border-danger border-opacity-25">
-                                    <option value="Fixed Monthly">Fixed Monthly Expenses</option>
-                                    <option value="Variable">Variable Expense</option>
-                                    <option value="Debt">Debt Repayment</option>
+                                    <option value="Fixed Monthly">Fixed Monthly Expenses (Rent, Insurances)</option>
+                                    <option value="Variable">Variable Expense (Food, Shopping, Fun)</option>
+                                    <option value="Debt">Debt Repayment (Loans, Credit Cards)</option>
                                 </select>
                             </div>
                             
                             <div class="col-12">
                                 <label class="form-label text-muted small">Specific Category</label>
-                                <select id="category" class="form-select form-select-lg" onchange="toggleCustomCategory()"></select>
+                                <select id="category" class="form-select form-select-lg" onchange="toggleCustomCategory()">
+                                </select>
                             </div>
 
                             <div class="col-12" id="customCategoryDiv" style="display: none;">
-                                <label class="form-label text-muted small">New Category Name</label>
+                                <label class="form-label text-muted small">New Category Name (e.g., Gym, Pets, Coffee)</label>
                                 <input id="customCategoryName" type="text" class="form-control form-control-lg" placeholder="Type a category...">
                             </div>
 
                             <div class="col-12">
                                 <label class="form-label text-muted small">Description / Note (Optional)</label>
-                                <input id="description" type="text" class="form-control form-control-lg" placeholder="e.g. Groceries">
+                                <input id="description" type="text" class="form-control form-control-lg" placeholder="e.g. Groceries at Aldi">
                             </div>
 
                             <div class="col-6">
@@ -266,9 +278,16 @@
                                 <label class="form-label text-muted small">Month</label>
                                 <input id="month" type="month" class="form-control form-control-lg">
                             </div>
+                            
+                            <div class="col-12 mt-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="recurring">
+                                    <label class="form-check-label text-muted" for="recurring">Make this a recurring monthly transaction</label>
+                                </div>
+                            </div>
 
                             <div class="col-12 mt-4">
-                                <button id="saveBtn" onclick="saveEntry()" class="btn btn-primary btn-lg w-100 rounded-pill">Save to Cloud</button>
+                                <button id="saveBtn" onclick="saveEntry()" class="btn btn-primary btn-lg w-100 rounded-pill">Save Transaction</button>
                             </div>
                         </div>
                     </div>
@@ -277,37 +296,70 @@
         </div>
     </div>
 
-    <script type="module">
-        // 1. IMPORT REALTIME DATABASE & EMAIL AUTH
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-        import { getDatabase, ref, onValue, push, set, update, remove, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW failed: ', err));
+            });
+        }
+    </script>
 
-        // 2. Initialize Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyBwVMT2ObKcQLlyeCBcHE1R-o1jDddTg9g",
-            authDomain: "monetrics-4d566.firebaseapp.com",
-            projectId: "monetrics-4d566",
-            storageBucket: "monetrics-4d566.firebasestorage.app",
-            messagingSenderId: "960054463575",
-            appId: "1:960054463575:web:0a14652d790d421efee712",
-            measurementId: "G-JTRMH0FWL7"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getDatabase(app); 
-
-        // --- GLOBAL VARIABLES ---
-        let currentUser = null;
-        let entries = [];
-        let expenseChart, bucketChart, trendLineChart;
+    <script>
+        // --- SECURITY LOGIC (Biometrics/PIN) ---
+        let isAppLocked = localStorage.getItem("appLockEnabled") === "true";
+        function arrayBufferToBase64(buffer) { let binary = ''; let bytes = new Uint8Array(buffer); for (let i = 0; i < bytes.byteLength; i++) { binary += String.fromCharCode(bytes[i]); } return window.btoa(binary); }
+        function base64ToArrayBuffer(base64) { let binary_string = window.atob(base64); let len = binary_string.length; let bytes = new Uint8Array(len); for (let i = 0; i < len; i++) { bytes[i] = binary_string.charCodeAt(i); } return bytes.buffer; }
         
-        let today = new Date();
-        let currentMonthStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
-        document.getElementById('month').value = currentMonthStr;
-        document.getElementById('historyMonth').value = currentMonthStr;
+        function updateLockMenuText() {
+            let textEl = document.getElementById("lockMenuText"); let iconEl = document.getElementById("lockMenuIcon");
+            if (isAppLocked) { textEl.innerText = "Disable App Lock"; iconEl.className = "bi bi-unlock fs-5 me-3 text-warning"; } 
+            else { textEl.innerText = "Enable App Lock"; iconEl.className = "bi bi-shield-lock fs-5 me-3 text-warning"; }
+        }
 
+        async function toggleAppLock() {
+            if (!window.PublicKeyCredential) return alert("Biometric auth not supported.");
+            if (isAppLocked) {
+                localStorage.removeItem("appLockEnabled"); localStorage.removeItem("appLockCredId"); isAppLocked = false;
+                alert("App Lock disabled."); updateLockMenuText();
+            } else {
+                try {
+                    const challenge = new Uint8Array(32); window.crypto.getRandomValues(challenge);
+                    const userId = new Uint8Array(16); window.crypto.getRandomValues(userId);
+                    const createOptions = { challenge, rp: { name: "Pocket Budget", id: window.location.hostname }, user: { id: userId, name: "owner", displayName: "Owner" }, pubKeyCredParams: [{ alg: -7, type: "public-key" }, { alg: -257, type: "public-key" }], authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" }, timeout: 60000 };
+                    const credential = await navigator.credentials.create({ publicKey: createOptions });
+                    localStorage.setItem("appLockCredId", arrayBufferToBase64(credential.rawId)); localStorage.setItem("appLockEnabled", "true"); isAppLocked = true;
+                    alert("App Lock enabled!"); updateLockMenuText();
+                } catch (err) { alert("Failed to setup lock."); }
+            }
+        }
+
+        async function unlockApp() {
+            try {
+                const challenge = new Uint8Array(32); window.crypto.getRandomValues(challenge);
+                const credIdBuffer = base64ToArrayBuffer(localStorage.getItem("appLockCredId"));
+                await navigator.credentials.get({ publicKey: { challenge, allowCredentials: [{ id: credIdBuffer, type: "public-key", transports: ["internal"] }], userVerification: "required", timeout: 60000 } });
+                document.getElementById("lockScreen").style.display = "none"; 
+                document.getElementById("mainApp").style.display = "block";
+                renderAll(); // Ensure data renders after unlock
+            } catch (err) { console.error("Unlock failed"); }
+        }
+
+        function initAppSecurity() {
+            updateLockMenuText();
+            if (isAppLocked) { 
+                document.getElementById("mainApp").style.display = "none"; 
+                document.getElementById("lockScreen").style.display = "flex"; 
+                unlockApp(); 
+            } 
+            else { 
+                document.getElementById("mainApp").style.display = "block";
+            }
+        }
+
+        // --- CORE APP LOGIC ---
+        let entries = JSON.parse(localStorage.getItem("financeData")) || [];
+        let savedCategories = JSON.parse(localStorage.getItem("financeCategoryMap"));
+        
         const defaultCategoryMap = {
             "Salary": { icon: "💼", bg: "#d1e7dd", color: "#0f5132" }, "Freelance": { icon: "🧑‍💻", bg: "#cff4fc", color: "#055160" },
             "Rent": { icon: "🏠", bg: "#e0cffc", color: "#3d087b" }, "Food": { icon: "🍔", bg: "#fff3cd", color: "#664d03" },
@@ -315,286 +367,186 @@
             "Subscriptions": { icon: "📺", bg: "#f3d0e5", color: "#6a1a41" }, "Travel": { icon: "✈️", bg: "#d2f4ea", color: "#0a3622" },
             "Utilities": { icon: "💡", bg: "#ffdac1", color: "#854a00" }, "Other": { icon: "📦", bg: "#e2e3e5", color: "#41464b" }
         };
+        
+        let categoryMap = { ...defaultCategoryMap, ...(savedCategories || {}) };
 
-        // --- AUTHENTICATION OBSERVER ---
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                currentUser = user;
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('mainApp').style.display = 'block';
-                
-                // Use email prefix for profile name
-                let profileName = user.email.split('@')[0];
-                document.getElementById('headerProfileName').innerText = profileName + "'s Budget";
+        let expenseChart, bucketChart, trendLineChart;
+        let currentEditIndex = -1;
 
-                listenToCloudData();
-                populateCategories();
-            } else {
-                currentUser = null;
-                entries = [];
-                document.getElementById('loginScreen').style.display = 'flex';
-                document.getElementById('mainApp').style.display = 'none';
-            }
-        });
+        let today = new Date();
+        let currentMonthStr = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0');
+        document.getElementById('month').value = currentMonthStr;
+        document.getElementById('historyMonth').value = currentMonthStr;
 
-        let unsubscribeDb = null;
-        function listenToCloudData() {
-            const userTransactionsRef = ref(db, 'transactions/' + currentUser.uid);
-            
-            unsubscribeDb = onValue(userTransactionsRef, (snapshot) => {
-                entries = [];
-                snapshot.forEach((childSnapshot) => {
-                    entries.push({ db_id: childSnapshot.key, ...childSnapshot.val() });
-                });
-                
-                entries.sort((a, b) => {
-                    let timeA = a.createdAt || 0;
-                    let timeB = b.createdAt || 0;
-                    return timeA - timeB; 
-                });
-
-                document.getElementById('loadingData').style.display = 'none';
-                window.renderAll(); 
-            });
-        }
-
-        // --- BUTTON LOGIC ---
-        window.loginWithEmail = () => {
-            let email = document.getElementById('emailInput').value.trim();
-            let pass = document.getElementById('passwordInput').value.trim();
-            if(!email || !pass) return alert("Please enter email and password.");
-            
-            document.getElementById('loginBtn').innerText = "Logging in...";
-            signInWithEmailAndPassword(auth, email, pass)
-                .then(() => { document.getElementById('loginBtn').innerText = "Log In"; })
-                .catch(error => {
-                    alert("Login Failed: " + error.message);
-                    document.getElementById('loginBtn').innerText = "Log In";
-                });
-        };
-
-        window.signUpWithEmail = () => {
-            let email = document.getElementById('emailInput').value.trim();
-            let pass = document.getElementById('passwordInput').value.trim();
-            if(!email || !pass) return alert("Please enter email and password.");
-            if(pass.length < 6) return alert("Password must be at least 6 characters.");
-            
-            document.getElementById('signupBtn').innerText = "Creating...";
-            createUserWithEmailAndPassword(auth, email, pass)
-                .then(() => { document.getElementById('signupBtn').innerText = "Create Account"; })
-                .catch(error => {
-                    alert("Sign Up Failed: " + error.message);
-                    document.getElementById('signupBtn').innerText = "Create Account";
-                });
-        };
-
-        window.signOutUser = () => {
-            if(unsubscribeDb) unsubscribeDb(); // Stop listening
-            signOut(auth);
-        };
-
-        window.switchTab = (tabName, element) => {
+        function switchTab(tabName, element) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
             document.getElementById('tab-' + tabName).classList.add('active');
             document.querySelectorAll('.bottom-nav .nav-item').forEach(nav => nav.classList.remove('active'));
             element.classList.add('active');
-            window.closeAllSwipes();
-        };
+            closeAllSwipes();
+        }
 
-        window.toggleFullScreen = () => {
+        function toggleFullScreen() {
             let doc = window.document; let docEl = doc.documentElement; let fsIcon = document.getElementById("fsIcon");
             let requestFullScreen = docEl.requestFullscreen || docEl.webkitRequestFullScreen;
             let cancelFullScreen = doc.exitFullscreen || doc.webkitExitFullscreen;
             if(!doc.fullscreenElement && !doc.webkitFullscreenElement) { requestFullScreen.call(docEl); fsIcon.className = "bi bi-fullscreen-exit fs-5 text-primary"; } 
             else { cancelFullScreen.call(doc); fsIcon.className = "bi bi-arrows-fullscreen fs-5 text-primary"; }
-        };
+        }
 
-        window.toggleExpenseBucket = () => {
-            let type = document.getElementById("type").value;
-            document.getElementById("expenseBucketDiv").style.display = (type === "expense") ? "block" : "none";
-        };
-
-        window.toggleCustomCategory = () => {
-            let select = document.getElementById("category"); let customDiv = document.getElementById("customCategoryDiv");
-            if (select.value === "custom") { customDiv.style.display = "block"; document.getElementById("customCategoryName").focus(); } 
-            else { customDiv.style.display = "none"; }
-        };
+        function save() {
+            localStorage.setItem("financeData", JSON.stringify(entries));
+            localStorage.setItem("financeCategoryMap", JSON.stringify(categoryMap));
+        }
 
         function populateCategories() {
             let select = document.getElementById("category");
             let optionsHtml = "";
-            Object.keys(defaultCategoryMap).forEach(cat => { optionsHtml += `<option value="${cat}">${defaultCategoryMap[cat].icon} ${cat}</option>`; });
-            
-            let userCustomCats = {};
-            entries.forEach(e => {
-                if(!defaultCategoryMap[e.category]) userCustomCats[e.category] = { icon: e.icon };
-            });
-            Object.keys(userCustomCats).forEach(cat => { optionsHtml += `<option value="${cat}">${userCustomCats[cat].icon} ${cat}</option>`; });
-
+            Object.keys(categoryMap).forEach(cat => { optionsHtml += `<option value="${cat}">${categoryMap[cat].icon} ${cat}</option>`; });
             optionsHtml += `<option value="custom" class="fw-bold text-primary">➕ Add Custom Category...</option>`;
             select.innerHTML = optionsHtml;
         }
 
+        function toggleCustomCategory() {
+            let select = document.getElementById("category"); let customDiv = document.getElementById("customCategoryDiv");
+            if (select.value === "custom") { customDiv.style.display = "block"; document.getElementById("customCategoryName").focus(); } 
+            else { customDiv.style.display = "none"; }
+        }
+
+        function toggleExpenseBucket() {
+            let type = document.getElementById("type").value;
+            document.getElementById("expenseBucketDiv").style.display = (type === "expense") ? "block" : "none";
+        }
+
         function getRandomHslColor() { const hue = Math.floor(Math.random() * 360); return { bg: `hsl(${hue}, 70%, 90%)`, color: `hsl(${hue}, 70%, 25%)` }; }
+        
         function getCategoryIcon(text) {
             const match = text.match(/([\uD800-\uDBFF][\uDC00-\uDFFF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F\uDE80-\uDEF6])/);
             if (match) return match[0];
             const lowerText = text.toLowerCase();
-            const dict = { "food":"🍔", "grocery":"🛒", "coffee":"☕", "restaurant":"🍽️", "car":"🚗", "gas":"⛽", "shop":"🛍️", "clothes":"👕", "amazon":"📦", "home":"🏠", "rent":"🏠", "electric":"⚡", "internet":"🌐", "phone":"📱", "health":"🏥", "doctor":"👨‍⚕️", "gym":"🏋️‍♂️", "movie":"🎬", "pet":"🐾", "dog":"🐶", "cat":"🐱", "school":"🎓", "bank":"🏦", "loan":"💸", "salary":"💰" };
+            const dict = { "food":"🍔", "grocery":"🛒", "coffee":"☕", "restaurant":"🍽️", "car":"🚗", "gas":"⛽", "shop":"🛍️", "clothes":"👕", "amazon":"📦", "home":"🏠", "rent":"🏠", "water":"💧", "electric":"⚡", "internet":"🌐", "phone":"📱", "health":"🏥", "doctor":"👨‍⚕️", "gym":"🏋️‍♂️", "movie":"🎬", "game":"🎮", "pet":"🐾", "dog":"🐶", "cat":"🐱", "school":"🎓", "bank":"🏦", "tax":"🧾", "loan":"💸", "salary":"💰", "savings":"🐷" };
             for (let key in dict) { if (lowerText.includes(key)) return dict[key]; }
             return "🏷️";
         }
 
-        window.openAddModal = () => {
-            document.getElementById("currentEditId").value = "";
+        function processRecurringEntries() {
+            let addedNew = false; let uniqueTemplates = [];
+            entries.filter(e => e.recurring).forEach(template => {
+                if (!uniqueTemplates.find(t => t.type === template.type && t.category === template.category && t.amount === template.amount)) uniqueTemplates.push(template);
+            });
+            uniqueTemplates.forEach(template => {
+                if (template.month < currentMonthStr) {
+                    if (!entries.find(e => e.month === currentMonthStr && e.type === template.type && e.category === template.category && e.amount === template.amount)) {
+                        entries.push({ type: template.type, category: template.category, amount: template.amount, month: currentMonthStr, recurring: true, description: template.description, expenseBucket: template.expenseBucket });
+                        addedNew = true;
+                    }
+                }
+            });
+            if (addedNew) save();
+        }
+
+        function openAddModal() {
+            currentEditIndex = -1;
             document.getElementById("modalTitle").innerText = "Add Entry";
-            document.getElementById("saveBtn").innerText = "Save to Cloud";
+            document.getElementById("saveBtn").innerText = "Save Transaction";
             
             document.getElementById("type").value = "expense";
-            window.toggleExpenseBucket();
+            toggleExpenseBucket();
             document.getElementById("expenseBucket").value = "Variable";
             
-            populateCategories(); 
             document.getElementById("category").selectedIndex = 0;
             document.getElementById("customCategoryName").value = "";
             document.getElementById("customCategoryDiv").style.display = "none";
             document.getElementById("description").value = "";
             document.getElementById("amount").value = "";
             document.getElementById("month").value = currentMonthStr;
+            document.getElementById("recurring").checked = false;
 
             bootstrap.Modal.getOrCreateInstance(document.getElementById('addEntryModal')).show();
-        };
+        }
 
-        window.editEntry = (db_id) => {
-            window.closeAllSwipes(); 
-            let e = entries.find(entry => entry.db_id === db_id);
-            if(!e) return;
-
-            document.getElementById("currentEditId").value = db_id;
+        function editEntry(i) {
+            closeAllSwipes(); currentEditIndex = i; let e = entries[i];
             document.getElementById("modalTitle").innerText = "Edit Entry";
-            document.getElementById("saveBtn").innerText = "Update in Cloud";
+            document.getElementById("saveBtn").innerText = "Update Transaction";
 
             document.getElementById("type").value = e.type;
-            window.toggleExpenseBucket();
+            toggleExpenseBucket();
             if (e.type === 'expense') document.getElementById("expenseBucket").value = e.expenseBucket || "Variable";
             
-            populateCategories();
             let catSelect = document.getElementById("category");
             if (Array.from(catSelect.options).some(opt => opt.value === e.category)) {
                 catSelect.value = e.category; document.getElementById("customCategoryDiv").style.display = "none";
             } else {
                 catSelect.value = "custom"; document.getElementById("customCategoryDiv").style.display = "block"; document.getElementById("customCategoryName").value = e.category;
             }
-            
             document.getElementById("description").value = e.description || "";
             document.getElementById("amount").value = e.amount;
             document.getElementById("month").value = e.month;
+            document.getElementById("recurring").checked = e.recurring || false;
 
             bootstrap.Modal.getOrCreateInstance(document.getElementById('addEntryModal')).show();
-        };
+        }
 
-        window.saveEntry = async () => {
-            let editId = document.getElementById("currentEditId").value;
+        function saveEntry() {
             let type = document.getElementById("type").value;
             let expenseBucket = (type === "expense") ? document.getElementById("expenseBucket").value : null;
             let category = document.getElementById("category").value;
             let amount = parseFloat(document.getElementById("amount").value);
             let month = document.getElementById("month").value;
             let description = document.getElementById("description").value.trim();
+            let recurring = document.getElementById("recurring").checked;
 
             if (!amount || !month) return alert("Please enter a valid amount and month.");
-
-            let iconStr, bgStr, colorStr;
 
             if (category === "custom") {
                 let rawName = document.getElementById("customCategoryName").value.trim();
                 if (!rawName) return alert("Enter a category name.");
-                category = rawName.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F\uDE80-\uDEF6]/g, '').trim() || "Custom";
-                let colors = getRandomHslColor();
-                iconStr = getCategoryIcon(rawName);
-                bgStr = colors.bg;
-                colorStr = colors.color;
-            } else {
-                let mapped = defaultCategoryMap[category];
-                if (mapped) {
-                    iconStr = mapped.icon; bgStr = mapped.bg; colorStr = mapped.color;
-                } else {
-                    let prev = entries.find(e => e.category === category);
-                    if(prev) { iconStr = prev.icon; bgStr = prev.bg; colorStr = prev.color; }
-                    else { iconStr = "🏷️"; bgStr = "#e2e3e5"; colorStr = "#41464b"; }
-                }
+                let cleanName = rawName.replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDE4F\uDE80-\uDEF6]/g, '').trim() || "Custom";
+                categoryMap[cleanName] = { icon: getCategoryIcon(rawName), ...getRandomHslColor() };
+                category = cleanName; populateCategories(); 
             }
 
-            let payload = { 
-                type, expenseBucket, category, amount, month, description, 
-                icon: iconStr, bg: bgStr, color: colorStr 
-            };
+            let newEntry = { type, expenseBucket, category, amount, month, description, recurring };
+            if (currentEditIndex >= 0) entries[currentEditIndex] = newEntry; else entries.push(newEntry);
+            save(); renderAll(); bootstrap.Modal.getInstance(document.getElementById('addEntryModal')).hide();
+        }
 
-            document.getElementById("saveBtn").innerText = "Saving...";
-            document.getElementById("saveBtn").disabled = true;
-
-            try {
-                if (editId) {
-                    const updateRef = ref(db, 'transactions/' + currentUser.uid + '/' + editId);
-                    await update(updateRef, payload);
-                } else {
-                    payload.createdAt = serverTimestamp();
-                    const newRef = push(ref(db, 'transactions/' + currentUser.uid));
-                    await set(newRef, payload);
-                }
-                bootstrap.Modal.getInstance(document.getElementById('addEntryModal')).hide();
-            } catch (err) {
-                console.error("Error saving: ", err);
-                alert("Error saving. Please check your internet connection.");
-            }
-
-            document.getElementById("saveBtn").innerText = "Save to Cloud";
-            document.getElementById("saveBtn").disabled = false;
-        };
-
-        window.deleteEntry = async (db_id) => { 
-            if(confirm("Delete this entry permanently from the cloud?")) { 
-                try {
-                    await remove(ref(db, 'transactions/' + currentUser.uid + '/' + db_id));
-                } catch(e) {
-                    alert("Failed to delete.");
-                }
-            } 
-        };
+        function deleteEntry(i) { if(confirm("Delete this entry?")) { entries.splice(i, 1); save(); renderAll(); } }
 
         // --- ADAPTIVE SWIPE LOGIC ---
         let startX = 0, startY = 0, activeSwipeElement = null, isDragging = false;
         
-        window.closeAllSwipes = () => { 
+        function closeAllSwipes() { 
             if (activeSwipeElement) { 
                 let f = activeSwipeElement.querySelector('.swipe-front'); 
                 if(f) f.style.transform = 'translateX(0px)'; 
                 activeSwipeElement = null; 
             } 
-        };
+        }
         
         document.addEventListener('pointerdown', e => { 
             if (activeSwipeElement && !activeSwipeElement.contains(e.target) && !e.target.closest('.swipe-actions')) {
-                window.closeAllSwipes(); 
+                closeAllSwipes(); 
             }
         });
         
-        window.handlePointerDown = (e) => { 
+        function handlePointerDown(e) { 
             isDragging = true; startX = e.clientX; startY = e.clientY; 
-            if (activeSwipeElement && activeSwipeElement !== e.currentTarget) window.closeAllSwipes(); 
+            if (activeSwipeElement && activeSwipeElement !== e.currentTarget) closeAllSwipes(); 
             e.currentTarget.setPointerCapture(e.pointerId); 
-        };
+        }
         
-        window.handlePointerMove = (e) => {
+        function handlePointerMove(e) {
             if (!isDragging || !startX) return; 
             let dx = startX - e.clientX, dy = Math.abs(startY - e.clientY);
             if (dy > Math.abs(dx)) return; 
             let front = e.currentTarget.querySelector('.swipe-front');
             if (dx > 0 && dx <= 120) { front.style.transform = `translateX(-${dx}px)`; front.style.transition = 'none'; } 
             else if (dx < 0 && activeSwipeElement === e.currentTarget) { let n = -104 - dx; if (n > -104 && n <= 0) { front.style.transform = `translateX(${n}px)`; front.style.transition = 'none'; } }
-        };
+        }
         
-        window.handlePointerUp = (e) => {
+        function handlePointerUp(e) {
             if (!isDragging || !startX) return; 
             isDragging = false;
             let dx = startX - e.clientX, front = e.currentTarget.querySelector('.swipe-front');
@@ -602,11 +554,12 @@
             if (dx > 40) { front.style.transform = `translateX(-104px)`; activeSwipeElement = e.currentTarget; } 
             else { front.style.transform = `translateX(0px)`; if (activeSwipeElement === e.currentTarget) activeSwipeElement = null; }
             startX = 0; startY = 0; e.currentTarget.releasePointerCapture(e.pointerId);
-        };
+        }
 
         // --- UI RENDERING ---
-        function createTransactionHTML(e) {
+        function createTransactionHTML(e, i) {
             let isInc = e.type === 'income';
+            let catInfo = categoryMap[e.category] || { icon: "🏷️", bg: "#e2e3e5", color: "#41464b" };
             let badgeHtml = "";
             if (!isInc && e.expenseBucket) {
                 let badgeColor = e.expenseBucket === "Fixed Monthly" ? "bg-primary" : (e.expenseBucket === "Debt" ? "bg-danger" : "bg-warning text-dark");
@@ -616,16 +569,16 @@
             return `
             <div class="swipe-container" onpointerdown="handlePointerDown(event)" onpointermove="handlePointerMove(event)" onpointerup="handlePointerUp(event)" onpointercancel="handlePointerUp(event)">
                 <div class="swipe-actions">
-                    <button class="btn-swipe edit" onclick="editEntry('${e.db_id}')"><i class="bi bi-pencil"></i></button>
-                    <button class="btn-swipe delete" onclick="deleteEntry('${e.db_id}')"><i class="bi bi-trash"></i></button>
+                    <button class="btn-swipe edit" onclick="editEntry(${i})"><i class="bi bi-pencil"></i></button>
+                    <button class="btn-swipe delete" onclick="deleteEntry(${i})"><i class="bi bi-trash"></i></button>
                 </div>
                 <div class="swipe-front">
                     <div class="d-flex align-items-center flex-grow-1 overflow-hidden">
-                        <div class="icon-box" style="background-color: ${e.bg || '#e2e3e5'}; color: ${e.color || '#41464b'};">${e.icon || '🏷️'}</div>
+                        <div class="icon-box" style="background-color: ${catInfo.bg}; color: ${catInfo.color};">${catInfo.icon}</div>
                         <div class="text-truncate pe-2">
                             <h6 class="mb-0 fw-bold text-truncate d-flex align-items-center">${e.category} ${badgeHtml}</h6>
                             ${e.description ? `<div class="text-muted mb-1 text-truncate" style="font-size: 0.8rem; line-height: 1.2;">${e.description}</div>` : ''}
-                            <small class="text-muted d-block" style="font-size: 0.75rem;">${e.month}</small>
+                            <small class="text-muted d-block" style="font-size: 0.75rem;">${e.recurring ? `<i class="bi bi-repeat text-primary me-1"></i>` : ''}${e.month}</small>
                         </div>
                     </div>
                     <div class="text-end ms-2 flex-shrink-0">
@@ -635,15 +588,14 @@
             </div>`;
         }
 
-        window.renderAll = () => {
-            window.closeAllSwipes();
+        function renderAll() {
+            closeAllSwipes();
             let dList = document.getElementById("dashboardList");
+            dList.innerHTML = entries.length === 0 ? `<div class="text-center text-muted p-4">No transactions. Click + to add!</div>` : "";
             
-            let sortedEntries = [...entries].reverse(); 
+            let sortedEntries = [...entries].map((e, index) => ({...e, originalIndex: index})).reverse();
             
-            dList.innerHTML = sortedEntries.length === 0 ? `<div class="text-center text-muted p-4">No cloud data yet. Click + to add!</div>` : "";
-            
-            sortedEntries.slice(0, 5).forEach(e => { dList.innerHTML += createTransactionHTML(e); });
+            sortedEntries.slice(0, 5).forEach(e => { dList.innerHTML += createTransactionHTML(e, e.originalIndex); });
             
             let income = entries.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0);
             let expense = entries.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0);
@@ -657,11 +609,11 @@
             
             hList.innerHTML = monthEntries.length === 0 ? `<div class="text-center text-muted p-4">No data for ${selMonth}</div>` : "";
             let monthSpent = 0;
-            monthEntries.forEach(e => { hList.innerHTML += createTransactionHTML(e); if(e.type === 'expense') monthSpent += e.amount; });
+            monthEntries.forEach(e => { hList.innerHTML += createTransactionHTML(e, e.originalIndex); if(e.type === 'expense') monthSpent += e.amount; });
             document.getElementById("historyMonthTotal").innerText = `€${monthSpent.toFixed(2)} Spent`;
 
             updateCharts();
-        };
+        }
 
         function updateCharts() {
             let catMap = {}; entries.filter(e => e.type === 'expense').forEach(e => { catMap[e.category] = (catMap[e.category] || 0) + e.amount; });
@@ -677,8 +629,26 @@
             let sortedMonths = Object.keys(trendMap).sort(); let trendValues = sortedMonths.map(m => trendMap[m]);
             if (trendLineChart) trendLineChart.destroy();
             if(sortedMonths.length > 0) trendLineChart = new Chart(document.getElementById("trendLineChart"), { type: "line", data: { labels: sortedMonths, datasets: [{ label: 'Total Spent (€)', data: trendValues, borderColor: '#EF4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.3, pointBackgroundColor: '#EF4444' }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } } });
+
+            let aText = document.getElementById("analyticsText"); aText.innerHTML = "";
+            let inc = entries.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0);
+            let exp = entries.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0);
+            if(inc === 0 && exp === 0) return aText.innerHTML = "<li>Add some entries to see insights!</li>";
+            if(inc > 0) aText.innerHTML += `<li><strong>Savings rate:</strong> ${((inc - exp) / inc * 100).toFixed(1)}% of income saved.</li>`;
+            let biggest = Object.entries(catMap).sort((a,b)=>b[1]-a[1])[0];
+            if(biggest) aText.innerHTML += `<li><strong>Top expense:</strong> ${biggest[0]} (€${biggest[1].toFixed(2)}).</li>`;
+            if(inc > 0 && bucketMap["Debt"] > 0) aText.innerHTML += `<li><strong>Debt burden:</strong> ${((bucketMap["Debt"] / inc) * 100).toFixed(1)}% of income goes to debt.</li>`;
         }
 
+        // Export/Import Local Data
+        function exportData() { let b = new Blob([JSON.stringify({entries, categories: categoryMap}, null, 2)], {type: 'application/json'}); let a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = `pocket_budget_backup.json`; a.click(); }
+        function importData(e) { let f = e.target.files[0]; if(!f) return; let r = new FileReader(); r.onload = ev => { try { let d = JSON.parse(ev.target.result); if(Array.isArray(d)) entries = d; else { entries = d.entries || []; categoryMap = { ...defaultCategoryMap, ...(d.categories || {}) }; } save(); populateCategories(); renderAll(); } catch(err) { alert("Invalid format"); } }; r.readAsText(f); }
+
+        // Start App
+        initAppSecurity();
+        populateCategories();
+        processRecurringEntries();
+        renderAll();
     </script>
 </body>
 </html>
