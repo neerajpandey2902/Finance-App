@@ -298,9 +298,7 @@
 
     <script>
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW failed: ', err));
-            });
+            window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(err => console.log('SW failed: ', err)); });
         }
     </script>
 
@@ -340,7 +338,7 @@
                 await navigator.credentials.get({ publicKey: { challenge, allowCredentials: [{ id: credIdBuffer, type: "public-key", transports: ["internal"] }], userVerification: "required", timeout: 60000 } });
                 document.getElementById("lockScreen").style.display = "none"; 
                 document.getElementById("mainApp").style.display = "block";
-                renderAll(); // Ensure data renders after unlock
+                renderAll(); 
             } catch (err) { console.error("Unlock failed"); }
         }
 
@@ -358,6 +356,16 @@
 
         // --- CORE APP LOGIC ---
         let entries = JSON.parse(localStorage.getItem("financeData")) || [];
+        
+        // CRITICAL DATA FIX: Sanitizes old backup data on load
+        entries.forEach(e => {
+            e.amount = parseFloat(e.amount) || 0; // Fixes string math crash
+            if (e.type === 'expense' && !e.expenseBucket) {
+                e.expenseBucket = "Variable"; // Fixes missing buckets on old entries
+            }
+        });
+        localStorage.setItem("financeData", JSON.stringify(entries)); // Save fixed data
+
         let savedCategories = JSON.parse(localStorage.getItem("financeCategoryMap"));
         
         const defaultCategoryMap = {
@@ -514,7 +522,7 @@
 
         function deleteEntry(i) { if(confirm("Delete this entry?")) { entries.splice(i, 1); save(); renderAll(); } }
 
-        // --- ADAPTIVE SWIPE LOGIC ---
+        // --- ADAPTIVE SWIPE LOGIC (Patched for safety) ---
         let startX = 0, startY = 0, activeSwipeElement = null, isDragging = false;
         
         function closeAllSwipes() { 
@@ -534,7 +542,7 @@
         function handlePointerDown(e) { 
             isDragging = true; startX = e.clientX; startY = e.clientY; 
             if (activeSwipeElement && activeSwipeElement !== e.currentTarget) closeAllSwipes(); 
-            e.currentTarget.setPointerCapture(e.pointerId); 
+            try { e.currentTarget.setPointerCapture(e.pointerId); } catch(err) { /* Prevents crash on unsupported elements */ }
         }
         
         function handlePointerMove(e) {
@@ -553,7 +561,8 @@
             front.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
             if (dx > 40) { front.style.transform = `translateX(-104px)`; activeSwipeElement = e.currentTarget; } 
             else { front.style.transform = `translateX(0px)`; if (activeSwipeElement === e.currentTarget) activeSwipeElement = null; }
-            startX = 0; startY = 0; e.currentTarget.releasePointerCapture(e.pointerId);
+            startX = 0; startY = 0; 
+            try { e.currentTarget.releasePointerCapture(e.pointerId); } catch(err){}
         }
 
         // --- UI RENDERING ---
@@ -599,6 +608,7 @@
             
             let income = entries.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0);
             let expense = entries.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0);
+            
             document.getElementById("incomeTotal").innerText = "€" + income.toFixed(2);
             document.getElementById("expenseTotal").innerText = "€" + expense.toFixed(2);
             document.getElementById("balanceTotal").innerText = "€" + (income - expense).toFixed(2);
@@ -640,9 +650,28 @@
             if(inc > 0 && bucketMap["Debt"] > 0) aText.innerHTML += `<li><strong>Debt burden:</strong> ${((bucketMap["Debt"] / inc) * 100).toFixed(1)}% of income goes to debt.</li>`;
         }
 
-        // Export/Import Local Data
+        // Export/Import Local Data (WITH SANITIZER)
         function exportData() { let b = new Blob([JSON.stringify({entries, categories: categoryMap}, null, 2)], {type: 'application/json'}); let a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = `pocket_budget_backup.json`; a.click(); }
-        function importData(e) { let f = e.target.files[0]; if(!f) return; let r = new FileReader(); r.onload = ev => { try { let d = JSON.parse(ev.target.result); if(Array.isArray(d)) entries = d; else { entries = d.entries || []; categoryMap = { ...defaultCategoryMap, ...(d.categories || {}) }; } save(); populateCategories(); renderAll(); } catch(err) { alert("Invalid format"); } }; r.readAsText(f); }
+        function importData(e) { 
+            let f = e.target.files[0]; if(!f) return; 
+            let r = new FileReader(); 
+            r.onload = ev => { 
+                try { 
+                    let d = JSON.parse(ev.target.result); 
+                    if(Array.isArray(d)) entries = d; 
+                    else { entries = d.entries || []; categoryMap = { ...defaultCategoryMap, ...(d.categories || {}) }; } 
+                    
+                    // Sanitize freshly imported data!
+                    entries.forEach(entry => {
+                        entry.amount = parseFloat(entry.amount) || 0;
+                        if (entry.type === 'expense' && !entry.expenseBucket) entry.expenseBucket = "Variable";
+                    });
+
+                    save(); populateCategories(); renderAll(); 
+                } catch(err) { alert("Invalid format"); } 
+            }; 
+            r.readAsText(f); 
+        }
 
         // Start App
         initAppSecurity();
