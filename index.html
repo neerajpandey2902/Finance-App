@@ -154,7 +154,7 @@
                 </div>
 
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="fw-bold mb-0 text-secondary">Recent Transactions</h6>
+                    <h6 class="fw-bold mb-0 text-secondary">All Transactions</h6>
                     <small class="text-muted" style="font-size: 0.7rem;"><i class="bi bi-arrows-collapse"></i> Swipe left to edit</small>
                 </div>
                 
@@ -359,12 +359,12 @@
         
         // CRITICAL DATA FIX: Sanitizes old backup data on load
         entries.forEach(e => {
-            e.amount = parseFloat(e.amount) || 0; // Fixes string math crash
+            e.amount = parseFloat(e.amount) || 0; 
             if (e.type === 'expense' && !e.expenseBucket) {
-                e.expenseBucket = "Variable"; // Fixes missing buckets on old entries
+                e.expenseBucket = "Variable"; 
             }
         });
-        localStorage.setItem("financeData", JSON.stringify(entries)); // Save fixed data
+        localStorage.setItem("financeData", JSON.stringify(entries));
 
         let savedCategories = JSON.parse(localStorage.getItem("financeCategoryMap"));
         
@@ -522,7 +522,7 @@
 
         function deleteEntry(i) { if(confirm("Delete this entry?")) { entries.splice(i, 1); save(); renderAll(); } }
 
-        // --- ADAPTIVE SWIPE LOGIC (Patched for safety) ---
+        // --- ADAPTIVE SWIPE LOGIC (Added 12px Deadzone) ---
         let startX = 0, startY = 0, activeSwipeElement = null, isDragging = false;
         
         function closeAllSwipes() { 
@@ -542,13 +542,18 @@
         function handlePointerDown(e) { 
             isDragging = true; startX = e.clientX; startY = e.clientY; 
             if (activeSwipeElement && activeSwipeElement !== e.currentTarget) closeAllSwipes(); 
-            try { e.currentTarget.setPointerCapture(e.pointerId); } catch(err) { /* Prevents crash on unsupported elements */ }
+            try { e.currentTarget.setPointerCapture(e.pointerId); } catch(err) {}
         }
         
         function handlePointerMove(e) {
             if (!isDragging || !startX) return; 
             let dx = startX - e.clientX, dy = Math.abs(startY - e.clientY);
-            if (dy > Math.abs(dx)) return; 
+            
+            // NEW DEADZONE: Ignore tiny movements (less than 12 pixels) so taps don't trigger swipes
+            if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+            
+            if (dy > Math.abs(dx)) return; // Ignore vertical scrolling
+            
             let front = e.currentTarget.querySelector('.swipe-front');
             if (dx > 0 && dx <= 120) { front.style.transform = `translateX(-${dx}px)`; front.style.transition = 'none'; } 
             else if (dx < 0 && activeSwipeElement === e.currentTarget) { let n = -104 - dx; if (n > -104 && n <= 0) { front.style.transform = `translateX(${n}px)`; front.style.transition = 'none'; } }
@@ -559,7 +564,9 @@
             isDragging = false;
             let dx = startX - e.clientX, front = e.currentTarget.querySelector('.swipe-front');
             front.style.transition = 'transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
-            if (dx > 40) { front.style.transform = `translateX(-104px)`; activeSwipeElement = e.currentTarget; } 
+            
+            // Require a deliberate swipe of at least 45 pixels to snap open
+            if (dx > 45) { front.style.transform = `translateX(-104px)`; activeSwipeElement = e.currentTarget; } 
             else { front.style.transform = `translateX(0px)`; if (activeSwipeElement === e.currentTarget) activeSwipeElement = null; }
             startX = 0; startY = 0; 
             try { e.currentTarget.releasePointerCapture(e.pointerId); } catch(err){}
@@ -604,7 +611,8 @@
             
             let sortedEntries = [...entries].map((e, index) => ({...e, originalIndex: index})).reverse();
             
-            sortedEntries.slice(0, 5).forEach(e => { dList.innerHTML += createTransactionHTML(e, e.originalIndex); });
+            // REMOVED THE .slice(0, 5) SO IT SHOWS ALL TRANSACTIONS
+            sortedEntries.forEach(e => { dList.innerHTML += createTransactionHTML(e, e.originalIndex); });
             
             let income = entries.filter(e => e.type === 'income').reduce((s, e) => s + e.amount, 0);
             let expense = entries.filter(e => e.type === 'expense').reduce((s, e) => s + e.amount, 0);
@@ -650,7 +658,7 @@
             if(inc > 0 && bucketMap["Debt"] > 0) aText.innerHTML += `<li><strong>Debt burden:</strong> ${((bucketMap["Debt"] / inc) * 100).toFixed(1)}% of income goes to debt.</li>`;
         }
 
-        // Export/Import Local Data (WITH SANITIZER)
+        // Export/Import Local Data
         function exportData() { let b = new Blob([JSON.stringify({entries, categories: categoryMap}, null, 2)], {type: 'application/json'}); let a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = `pocket_budget_backup.json`; a.click(); }
         function importData(e) { 
             let f = e.target.files[0]; if(!f) return; 
@@ -661,7 +669,6 @@
                     if(Array.isArray(d)) entries = d; 
                     else { entries = d.entries || []; categoryMap = { ...defaultCategoryMap, ...(d.categories || {}) }; } 
                     
-                    // Sanitize freshly imported data!
                     entries.forEach(entry => {
                         entry.amount = parseFloat(entry.amount) || 0;
                         if (entry.type === 'expense' && !entry.expenseBucket) entry.expenseBucket = "Variable";
